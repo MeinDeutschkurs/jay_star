@@ -106,7 +106,35 @@ Components:
 - **PID:** Process ID in hex (for multi-process safety)
 - **Timestamp:** Nanosecond precision timestamp in hex
 
-### 6. Encrypted Cookies
+### 6. Globbing & Pattern Matching
+
+Find files and data using glob patterns with case-insensitive search:
+
+```php
+// Find user by username (case-insensitive)
+$matches = j_glob(
+    'web/demo/' . j_id_wildcard('user') . '/auth/username=JoPhi',
+    case_insensitive: true
+);
+// Returns: ["web/demo/user/0/abc/def/.../auth/username=JoPhi"]
+
+// j_id_wildcard() generates pattern for all IDs of a section
+j_id_wildcard('user')
+// Returns: "user/*/*/*/*/*/*/*/*/*"
+
+// Login: Find user by email
+$matches = j_glob(
+    'web/demo/' . j_id_wildcard('user') . '/auth/email=user@example.com',
+    case_insensitive: true
+);
+
+// Pattern matching with wildcards
+j_glob('web/*/domain/*/host/*/content/*');
+```
+
+**Case-Insensitive Search:** Automatically generates glob patterns like `[jJ][oO][pP][hH][iI]` for ASCII characters or `{j,J}{o,O}` for multi-byte characters, enabling efficient case-insensitive lookups without opening files.
+
+### 7. Encrypted Cookies
 
 Secure cookie handling with AES-256-CBC encryption:
 
