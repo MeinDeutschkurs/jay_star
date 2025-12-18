@@ -13,15 +13,15 @@ jay_star treats URLs, data, state, and IDs as hierarchical paths - similar to a 
 URLs are directly mapped to filesystem paths:
 
 ```
-URL: localhost/foo/bar~/media/123_product-image
+URL: localhost/about-us/our-philosophy/~/0/1/4_gruppenfoto-mit-gruender.jpg
 
-Structured Path: localhost/foo/bar
-Asset Path: media/123
-SEO Term: product-image (stripped)
+Structured Path: about-us/our-philosophy
+Asset Path: 0/1/4
+SEO Term: gruppenfoto-mit-gruender.jpg (stripped)
 
-Flat Path: localhost⌇foo⌇bar (/ → ⌇)
+Flat Path: localhost⌇about-us⌇our-philosophy (/ → ⌇)
 
-Filesystem: data/web/demo/domain/localhost/host/localhost⌇foo⌇bar/
+Filesystem: data/web/demo/domain/localhost/host/localhost⌇about-us⌇our-philosophy/media/0/1/4
 ```
 
 **Special Syntax:**
