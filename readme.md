@@ -69,19 +69,23 @@ All state is stored in `$GLOBALS['_MEMOIZER']` and accessible throughout the req
 Data persistence using the filesystem:
 
 ```php
+// Generate user ID with shard
+$user_id_shard = j_id('user');
+// Returns: "user/0/003/039/000/000/019/5f8/321/7c0"
+
 // Simple value
-j_files_set('users/123/name', 'John');
-// Creates: data/users/123/name
+j_files_set($user_id_shard . '/name', 'John');
+// Creates: data/user/0/003/039/000/000/019/5f8/321/7c0/name
 
 // Nested structure
-j_files_set('users/123', ['name' => 'John', 'age' => 30]);
-// Creates: data/users/123/name and data/users/123/age
+j_files_set($user_id_shard, ['name' => 'John', 'age' => 30]);
+// Creates: data/user/0/003/039/.../name and .../age
 
 // Meta-keys (value in filename)
-j_files_set('users/123/status=', 'active');
-// Creates: data/users/123/status=active
+j_files_set($user_id_shard . '/status=', 'active');
+// Creates: data/user/0/003/039/.../status=active
 
-j_files_get('users/123/status='); // 'active'
+j_files_get($user_id_shard . '/status='); // 'active'
 ```
 
 **Meta-Keys:** Keys ending with `=` store the value as part of the filename, enabling fast queries without opening files.
@@ -113,8 +117,9 @@ j_cookie_get('__necessary', default: [
 ]);
 // Reads, decrypts, stores in memoizer
 
-// Modify cookie data in memoizer
-j_memo_set('var/cookies/__necessary/user-id', 'user/0/123/456/...');
+// Generate and store user ID in cookie
+$user_id_shard = j_id('user');
+j_memo_set('var/cookies/__necessary/user-id', $user_id_shard);
 
 j_cookie_set('__necessary');
 // Reads from memoizer, encrypts, sets cookie
