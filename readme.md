@@ -130,7 +130,17 @@ $matches = j_glob(
 
 // Pattern matching with wildcards
 j_glob('web/*/domain/*/host/*/content/*');
+
+// Extract user ID from glob match result
+$match = "web/demo/user/0/abc/def/123/456/789/auth/username=JoPhi";
+$user_path = j_reduce_path($match, 2);
+// Returns: "web/demo/user/0/abc/def/123/456/789"
+// (removes: auth/username=JoPhi)
 ```
+
+**Path Manipulation:**
+- `j_reduce_path($path, $levels)` - Remove N path segments from the end
+- Useful for extracting parent paths or IDs from glob results
 
 **Case-Insensitive Search:** Automatically generates glob patterns like `[jJ][oO][pP][hH][iI]` for ASCII characters or `{j,J}{o,O}` for multi-byte characters, enabling efficient case-insensitive lookups without opening files.
 
@@ -139,19 +149,30 @@ j_glob('web/*/domain/*/host/*/content/*');
 Secure cookie handling with AES-256-CBC encryption:
 
 ```php
+// 1. Load cookie from HTTP (on request start)
 j_cookie_get('__necessary', default: [
     'device-id' => null,
     'user-id' => null
 ]);
-// Reads, decrypts, stores in memoizer
 
-// Generate and store user ID in cookie
+// 2. Read cookie values during request
+$user_id = j_from_cookie('__necessary', 'user-id');
+$device_id = j_from_cookie('__necessary', 'device-id', default: 'unknown');
+$all_data = j_from_cookie('__necessary'); // Get entire cookie
+
+// 3. Update cookie values during request
 $user_id_shard = j_id('user');
-j_memo_set('var/cookies/__necessary/user-id', $user_id_shard);
+j_update_cookie('__necessary', 'user-id', $user_id_shard);
 
+// 4. Write cookie to HTTP (on response)
 j_cookie_set('__necessary');
-// Reads from memoizer, encrypts, sets cookie
 ```
+
+**Complete Cookie API:**
+- `j_cookie_get()` - Load from HTTP, decrypt, store in memoizer
+- `j_from_cookie()` - Read values from memoizer during request
+- `j_update_cookie()` - Update values in memoizer
+- `j_cookie_set()` - Encrypt and write to HTTP
 
 All cookie data is JSON-encoded and encrypted with a unique key per installation.
 
