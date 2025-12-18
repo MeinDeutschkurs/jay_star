@@ -118,6 +118,8 @@
         
         j_memo_set('pathes', $paths);
 
+        // j_memo_set('demo/j_reduce_path', j_reduce_path(j_memo_get('pathes/current-meta'), 2));
+
     J_INPUT:
 
         J_INPUT_COOKIES:
