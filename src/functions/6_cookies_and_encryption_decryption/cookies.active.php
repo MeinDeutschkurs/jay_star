@@ -39,6 +39,10 @@ function j_cookie_set($name) {
     }
 }
 
+function j_update_cookie($name, $key, $value) {
+    j_memo_set('var/cookies/'.$name.'/'.$key, $value);
+}
+
 function j_decrypt_aes($encrypted) {
     $KEY = j_memo_get('state/aes');
     
