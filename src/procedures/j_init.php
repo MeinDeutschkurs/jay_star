@@ -46,6 +46,7 @@
             '# IDE' . PHP_EOL .
             '.vscode/' . PHP_EOL .
             '.idea/' . PHP_EOL .
+            '.claude/' . PHP_EOL .
             '*.sublime-project' . PHP_EOL .
             '*.sublime-workspace' . PHP_EOL .
             PHP_EOL .
