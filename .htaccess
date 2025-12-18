@@ -1,7 +1,0 @@
-RewriteEngine On
-# Exception for special folders:
-RewriteCond %{REQUEST_URI} !^/(css|js|assets)/
-
-# index.php is the gateway:
-RewriteCond %{REQUEST_URI} !^/index\.php$ [NC]
-RewriteRule ^(.*)$ /index.php [QSA,L]

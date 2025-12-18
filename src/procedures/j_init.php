@@ -36,7 +36,10 @@
 
     if (!file_exists('./.gitignore')) {
         echo '<!-- Creating .gitignore... ';
-        file_put_contents('./.gitignore', 
+        file_put_contents('./.gitignore',
+            '# Auto-generated' . PHP_EOL .
+            '.htaccess' . PHP_EOL .
+            PHP_EOL .
             '# macOS' . PHP_EOL .
             '.DS_Store' . PHP_EOL .
             '.AppleDouble' . PHP_EOL .
