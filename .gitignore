@@ -11,6 +11,7 @@
 .vscode/
 .idea/
 .claude/
+claude.md
 *.sublime-project
 *.sublime-workspace
 
