@@ -180,6 +180,19 @@
                 j_memo_set('state/is_backend_domain',   j_memo_get('var/post/dom')    ?? j_memo_get('var/get/dom')    ?? false);
                 j_memo_set('state/is_backend_host',     j_memo_get('var/post/host')   ?? j_memo_get('var/get/host')   ?? false);
 
+            J_DEMO_OF_ALL_USERS_OF_WEB_DEMO:
+                j_memo_set('demo/j_glob/find_all_users', j_glob(
+                    'web/demo/' . j_id_wildcard('user') . '/auth/username=*',
+                    trim_prefix: 'web/demo/',
+                    trim_suffix: 'auth/username',
+                    meta_split: true,
+                    keys_slash_to_dash: true
+                ));
+
+                j_memo_set('demo/j_extract_from_path/user',     j_extract_from_path('web/demo/user/1/013/ac1/000/000/001/882/9e1/b8b/95e/f54/auth/username', 'user', default:'error'));
+                j_memo_set('demo/j_extract_from_path/web',      j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'web', default:'error'));
+                j_memo_set('demo/j_extract_from_path/domain',   j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'domain', default:'error'));
+                j_memo_set('demo/j_extract_from_path/host',     j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'host', default:'error'));
 
     J_CREATE:
 

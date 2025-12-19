@@ -31,7 +31,7 @@
         return $pattern;
     }
 
-    function j_glob($pattern, $value = null, $flags = 0, $case_insensitive = false, $lock = true, $trim_prefix = '') {
+    function j_glob($pattern, $value = null, $flags = 0, $case_insensitive = false, $lock = true, $trim_prefix = '', $trim_suffix = '', $meta_split = false, $keys_slash_to_dash = false) {
             // Bei case_insensitive MUSS GLOB_BRACE aktiv sein für {alt1,alt2} Patterns
             if ($case_insensitive) {
                 $flags = $flags | GLOB_BRACE;
@@ -74,7 +74,8 @@
             
             $results = [];
             $base_len = strlen(PATHES_BASE_DIR);
-            $trim_len = strlen($trim_prefix);
+            $trim_prefix_len = strlen($trim_prefix);
+            $trim_suffix_len = strlen($trim_suffix);
 
             foreach ($files as $file) {
                 // Entferne BASE_DIR vom Pfad
@@ -82,12 +83,12 @@
 
                 // Optionaler trim_prefix
                 if ($trim_prefix !== '' && str_starts_with($relative, $trim_prefix)) {
-                    $relative = ltrim(substr($relative, $trim_len), '/');
+                    $relative = ltrim(substr($relative, $trim_prefix_len), '/');
                 }
 
                 $parts = explode('/', $relative);
                 $decoded_parts = [];
-                
+
                 foreach ($parts as $part) {
                     $pos = strpos($part, '=');
                     if ($pos !== false) {
@@ -98,9 +99,37 @@
                         $decoded_parts[] = rawurldecode($part);
                     }
                 }
-                
+
                 $keypath = implode('/', $decoded_parts);
-                
+
+                // meta_split mode: Split path and value for meta-keys
+                if ($meta_split && $value === null) {
+                    // Check if last part has meta-key (contains =)
+                    $last_part = end($decoded_parts);
+                    if (strpos($last_part, '=') !== false) {
+                        $pos = strrpos($keypath, '=');
+                        $path_without_value = substr($keypath, 0, $pos);
+
+                        // Optionaler trim_suffix (nach dem Dekodieren, vor slash_to_dash!)
+                        if ($trim_suffix !== '' && str_ends_with($path_without_value, $trim_suffix)) {
+                            $path_without_value = rtrim(substr($path_without_value, 0, -$trim_suffix_len), '/');
+                        }
+
+                        if ($keys_slash_to_dash===true){
+                            $path_without_value = slash_to_dash($path_without_value);
+                        }
+
+                        $meta_value = rawurldecode(substr($keypath, $pos + 1));
+                        $results[$path_without_value] = $meta_value;
+                        continue;
+                    }
+                }
+
+                // Optionaler trim_suffix für non-meta_split Pfade
+                if ($trim_suffix !== '' && str_ends_with($keypath, $trim_suffix)) {
+                    $keypath = rtrim(substr($keypath, 0, -$trim_suffix_len), '/');
+                }
+
                 if ($value === null) {
                     $results[] = $keypath;
                     continue;
