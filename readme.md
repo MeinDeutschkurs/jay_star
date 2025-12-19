@@ -185,10 +185,18 @@ The main gateway (`index.php`) processes requests through labeled sections:
 3. **J_CONFIGURATION:** Set defaults (output format, encryption key)
 4. **J_REGISTRY:** Multi-tenant configuration (domain → tenant mapping)
 5. **J_RESOLVE_TENANTS:** Match current domain to tenant
-6. **J_RESOLVE_URL_PATH:** Parse URL into structured/asset paths
+6. **J_RESOLVE_URL_PATH:** Parse URL with multi-phase detection:
+   - **PHASE 1:** User Profile Mode (`@username` → lookup user)
+   - **PHASE 2:** API Endpoint Detection (`jophi/v1` → set JSON output)
+   - **PHASE 3:** Reserved for future path transformations
+   - **FINAL PHASE:** Asset split (`~/`) and SEO term extraction
 7. **J_SET_SYSTEM_WIDE_PATHES:** Generate all filesystem paths
-8. **J_INPUT:** Process cookies, POST, GET parameters
-9. **J_EXIT:** Output response (HTML/JSON/Media)
+8. **J_READ:** Gather all information (READ before CRUD)
+   - **J_INPUT:** Process cookies, POST, GET parameters, detect run modes
+9. **J_CREATE:** Create operations (based on READ context)
+10. **J_UPDATE:** Update operations (based on READ context)
+11. **J_DELETE:** Delete operations (based on READ context)
+12. **J_EXIT:** Output response (HTML/JSON/Media)
 
 ## Function Categories
 
@@ -217,17 +225,22 @@ Functions are organized by priority (number prefix):
 
 **What works:**
 - Multi-tenant routing and path resolution
+- User profile mode (`@username` paths with case-insensitive lookup)
+- API endpoint detection (`jophi/v1` prefix)
 - File-based storage with meta-keys
-- Encrypted cookie handling
+- Encrypted cookie handling (with helper functions)
 - Memoizer state management
 - Unique ID generation with sharding
+- JSON output handler
+- CRUD-structured gateway (READ before CREATE/UPDATE/DELETE)
 
 **TODO:**
-- User profile mode (paths starting with `@username`)
-- Output handlers (HTML/JSON/Media)
-- Authentication system
+- HTML output handler (currently debug output only)
+- Media output handler
+- Authentication system (login/logout logic)
 - Shutdown handler (j_shutdown)
 - Real registry implementation (currently hardcoded demo)
+- Access control enforcement (needs-access checking)
 
 ## License
 

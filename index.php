@@ -66,6 +66,8 @@
                 $original_path = trim($rest, '/');
             } else {
                 // User not found - 404
+                // ATTENTION, AS SOON AS WE HAVE THE HOST-BASED LAYOUT/DESIGN, THIS ERROR MUST BE COVERED BY A DIFFERENT HANDLER, WHICH
+                // INCLUDES ALL THE WEB/DOMAIN AND HOST BASED FEATURES!
                 goto J_ERROR_USER_NOT_FOUND;
             }
         }
@@ -77,6 +79,10 @@
             $original_path = trim(substr($original_path, strlen($api_prefix)), '/');
         }
 
+        // PHASE 3: maybe further path-parts, if necessary, that change the basic behaviour.
+        // TO-DO: As soon as in need.
+
+        // FINAL PHASE: General splittings:
         // Check if asset path exists (marked by ~/)
         $is_asset_request = strpos($original_path, '~/') !== false;
         $parts = explode('~/', $original_path, 2);
