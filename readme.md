@@ -108,7 +108,7 @@ Components:
 
 ### 6. Globbing & Pattern Matching
 
-Find files and data using glob patterns with case-insensitive search:
+Find files and data using glob patterns with advanced filtering:
 
 ```php
 // Find user by username (case-insensitive)
@@ -122,11 +122,15 @@ $matches = j_glob(
 j_id_wildcard('user')
 // Returns: "user/*/*/*/*/*/*/*/*/*"
 
-// Login: Find user by email
-$matches = j_glob(
-    'web/demo/' . j_id_wildcard('user') . '/auth/email=user@example.com',
-    case_insensitive: true
+// Advanced: Clean results with trim_prefix, trim_suffix, meta_split, keys_slash_to_dash
+$users = j_glob(
+    'web/demo/' . j_id_wildcard('user') . '/auth/username=*',
+    trim_prefix: 'web/demo/',              // Remove 'web/demo/' from results
+    trim_suffix: 'auth/username',          // Remove 'auth/username' from results
+    meta_split: true,                      // Split path and meta-value into key => value
+    keys_slash_to_dash: true               // Convert '/' to '-' in keys
 );
+// Returns: ['user-1-013-ac1-000-000-001-882-9e1-b8b-95e-f54' => 'JoPhi']
 
 // Pattern matching with wildcards
 j_glob('web/*/domain/*/host/*/content/*');
@@ -138,13 +142,39 @@ $user_path = j_reduce_path($match, 2);
 // (removes: auth/username=JoPhi)
 ```
 
+**Advanced Parameters:**
+- `trim_prefix: ''` - Remove prefix from beginning of paths
+- `trim_suffix: ''` - Remove suffix from end of paths (applied after decoding)
+- `meta_split: false` - Return flat array with path as key, meta-value as value
+- `keys_slash_to_dash: false` - Convert `/` to `-` in keys (useful for cookies, JSON keys)
+
 **Path Manipulation:**
 - `j_reduce_path($path, $levels)` - Remove N path segments from the end
 - Useful for extracting parent paths or IDs from glob results
 
 **Case-Insensitive Search:** Automatically generates glob patterns like `[jJ][oO][pP][hH][iI]` for ASCII characters or `{j,J}{o,O}` for multi-byte characters, enabling efficient case-insensitive lookups without opening files.
 
-### 7. Encrypted Cookies
+### 7. Path Extraction
+
+Extract specific components from structured paths:
+
+```php
+// Extract user ID from a path with sharded structure
+$path = 'web/demo/user/1/013/ac1/000/000/001/882/9e1/b8b/95e/f54/auth/username';
+$user_id = j_extract_from_path($path, 'user');
+// Returns: '1/013/ac1/000/000/001/882/9e1/b8b/95e/f54'
+
+// Extract multiple components
+$info = j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/page');
+// Returns: ['domain' => 'localhost', 'host' => '127.0.0.1', 'content' => 'page']
+
+// Get specific section with default fallback
+$domain = j_extract_from_path($path, 'domain', default: 'unknown');
+```
+
+**Smart Shard Detection:** Automatically recognizes sharded IDs like `user` and extracts the complete ID including all shard segments.
+
+### 8. Encrypted Cookies
 
 Secure cookie handling with AES-256-CBC encryption:
 
@@ -207,7 +237,7 @@ Functions are organized by priority (number prefix):
 - **1_memo:** Memoizer functions (j_memo_get/set)
 - **2_files:** File operations (j_files_get/set, j_file_get_contents)
 - **3_ids_and_shards:** ID generation (j_id)
-- **4_ids_and_shards_wildcards:** ID wildcards (j_id_wildcard)
+- **4_ids_and_shards_wildcards:** ID wildcards (j_id_wildcard, j_extract_from_path)
 - **5_globbing:** Pattern matching (j_glob)
 - **6_cookies_and_encryption_decryption:** Cookie & crypto (j_cookie_get/set, j_encrypt/decrypt_aes)
 
