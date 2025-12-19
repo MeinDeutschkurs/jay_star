@@ -120,73 +120,80 @@
 
         // j_memo_set('demo/j_reduce_path', j_reduce_path(j_memo_get('pathes/current-meta'), 2));
 
-    J_INPUT:
+    J_READ:    
 
-        J_INPUT_COOKIES:
-            j_cookie_get('__necessary', 
-                default: [
-                    'device-id' => slash_to_dash(j_id('device')),
-                    'user-id' => null,
-                    'logged-in' => false,
-                ]
-            );
+        J_INPUT:
 
-        J_INPUT_POST:
-            $p=j_kv_get('_POST');
-            $pc=count($p);
-            j_memo_set('var_post', $p , separator:'_');
-            j_memo_set('state/is_post', $pc);
-        
-        J_INPUT_GET:
-            $g=j_kv_get('_GET');
-            $gc=count($g);
-            j_memo_set('var_get',  $g,  separator:'_');
-            j_memo_set('state/is_get',  $gc);
+            J_INPUT_COOKIES:
+                j_cookie_get('__necessary', 
+                    default: [
+                        'device-id' => slash_to_dash(j_id('device')),
+                        'user-id' => null,
+                        'logged-in' => false,
+                    ]
+                );
 
-        J_INPUT_IMPLICIT_RUN_MODES:
-            j_memo_set('state/is_login',    j_memo_get('var/post/login')  ?? j_memo_get('var/get/login')  ?? false);
-            j_memo_set('state/is_logout',   j_memo_get('var/post/logout') ?? j_memo_get('var/get/logout') ?? false);
+            J_INPUT_POST:
+                $p=j_kv_get('_POST');
+                $pc=count($p);
+                j_memo_set('var_post', $p , separator:'_');
+                j_memo_set('state/is_post', $pc);
+            
+            J_INPUT_GET:
+                $g=j_kv_get('_GET');
+                $gc=count($g);
+                j_memo_set('var_get',  $g,  separator:'_');
+                j_memo_set('state/is_get',  $gc);
 
-
-    goto J_SKIP_CREATE_DEMO_USER;
-    J_CREATE_DEMO_USER:
-    /*
-        $web = j_memo_get('analysis/tenant/web');
-        $domain = j_memo_get('analysis/tenant/domain');
-        $host = j_memo_get('analysis/tenant/host');
-        $newUserShard = j_id('user');
-        $newUserDash = slash_to_dash($newUserShard);
-        $username = 'JoPhi';
-        $useremail = 'jophi@jophi.guru';
-        $passwort = 'geheim1234';
-        $has_access = [
-            'web-admin::' . $web . '=' => 1,
-            'domain-admin::' . $domain . '=' => 1,
-            'host-admin::' . $host . '=' => 1,
-            'registered::=' => 1,
-            'private::' . $newUserDash . '=' => 1,
-        ];
-
-        j_files_set("web/$web/" . $newUserShard, [
-            'type=' => 'user_account',
-            'has_access' => $has_access,
-            'auth/type=' => 'user_account_auth',
-            'auth/user_id=' => $newUserDash,
-            'auth/username=' => $username,
-            'auth/useremail=' => $useremail,
-            'auth/userpassword' => password_hash($passwort, PASSWORD_DEFAULT),
-            'meta/type=' => 'user_account_meta',
-            'meta/creation-date=' => time(),
-            'profile/type=' => 'user_account_profile',
-            'profile/title=' => $username,
-            'profile/description=' => 'Hello World!',
-            'profile/needs_access' => [],
-            'profile/blocks' => [],
-        ]);
-    */
-    J_SKIP_CREATE_DEMO_USER:
+            J_INPUT_IMPLICIT_RUN_MODES:
+                j_memo_set('state/is_login',    j_memo_get('var/post/login')  ?? j_memo_get('var/get/login')  ?? false);
+                j_memo_set('state/is_logout',   j_memo_get('var/post/logout') ?? j_memo_get('var/get/logout') ?? false);
 
 
+    J_CREATE:
+
+        // goto J_SKIP_CREATE_DEMO_USER;
+        J_CREATE_DEMO_USER:
+        /*
+            $web = j_memo_get('analysis/tenant/web');
+            $domain = j_memo_get('analysis/tenant/domain');
+            $host = j_memo_get('analysis/tenant/host');
+            $newUserShard = j_id('user');
+            $newUserDash = slash_to_dash($newUserShard);
+            $username = 'JoPhi';
+            $useremail = 'jophi@jophi.guru';
+            $passwort = 'geheim1234';
+            $has_access = [
+                'web-admin::' . $web . '=' => 1,
+                'domain-admin::' . $domain . '=' => 1,
+                'host-admin::' . $host . '=' => 1,
+                'registered::=' => 1,
+                'private::' . $newUserDash . '=' => 1,
+            ];
+
+            j_files_set("web/$web/" . $newUserShard, [
+                'type=' => 'user_account',
+                'has_access' => $has_access,
+                'auth/type=' => 'user_account_auth',
+                'auth/user_id=' => $newUserDash,
+                'auth/username=' => $username,
+                'auth/useremail=' => $useremail,
+                'auth/userpassword' => password_hash($passwort, PASSWORD_DEFAULT),
+                'meta/type=' => 'user_account_meta',
+                'meta/creation-date=' => time(),
+                'profile/type=' => 'user_account_profile',
+                'profile/title=' => $username,
+                'profile/description=' => 'Hello World!',
+                'profile/needs_access' => [],
+                'profile/blocks' => [],
+            ]);
+        */
+        J_SKIP_CREATE_DEMO_USER:
+
+    J_UPDATE:
+
+    J_DELETE:
+   
     J_EVERYTHING_IS_FINE_SO_SKIP_TO_EXIT:
         goto J_EXIT;
 
