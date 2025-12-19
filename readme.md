@@ -21,7 +21,7 @@ SEO Term: gruppenfoto-mit-gruender.jpg (stripped)
 
 Flat Path: localhost⌇about-us⌇our-philosophy (/ → ⌇)
 
-Filesystem: data/web/demo/domain/localhost/host/localhost⌇about-us⌇our-philosophy/media/0/1/4
+Filesystem: data/web/demo/domain/localhost/host/localhost/localhost⌇about-us⌇our-philosophy/media/0/1/4
 ```
 
 **Special Syntax:**
