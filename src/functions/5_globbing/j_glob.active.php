@@ -83,6 +83,8 @@
                 // Optionaler trim_prefix
                 if ($trim_prefix !== '' && str_starts_with($relative, $trim_prefix)) {
                     $relative = ltrim(substr($relative, $trim_len), '/');
+                }
+
                 $parts = explode('/', $relative);
                 $decoded_parts = [];
                 
