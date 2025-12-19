@@ -1,6 +1,7 @@
 <?php
     $database_name='data';
-    @define('PATHES_BASE_DIR', __DIR__ . '/'.$database_name.'/');
+    @define('PATHES_BASE_DIR', getcwd() . '/'.$database_name.'/');
+
 
     if (!file_exists('./.htaccess')) {
         echo '<!-- HOLD ON! I have to complete the setup process... ';

@@ -148,6 +148,45 @@
             j_memo_set('state/is_logout',   j_memo_get('var/post/logout') ?? j_memo_get('var/get/logout') ?? false);
 
 
+    goto J_SKIP_CREATE_DEMO_USER;
+    J_CREATE_DEMO_USER:
+    /*
+        $web = j_memo_get('analysis/tenant/web');
+        $domain = j_memo_get('analysis/tenant/domain');
+        $host = j_memo_get('analysis/tenant/host');
+        $newUserShard = j_id('user');
+        $newUserDash = slash_to_dash($newUserShard);
+        $username = 'JoPhi';
+        $useremail = 'jophi@jophi.guru';
+        $passwort = 'geheim1234';
+        $has_access = [
+            'web-admin::' . $web . '=' => 1,
+            'domain-admin::' . $domain . '=' => 1,
+            'host-admin::' . $host . '=' => 1,
+            'registered::=' => 1,
+            'private::' . $newUserDash . '=' => 1,
+        ];
+
+        j_files_set("web/$web/" . $newUserShard, [
+            'type=' => 'user_account',
+            'has_access' => $has_access,
+            'auth/type=' => 'user_account_auth',
+            'auth/user_id=' => $newUserDash,
+            'auth/username=' => $username,
+            'auth/useremail=' => $useremail,
+            'auth/userpassword' => password_hash($passwort, PASSWORD_DEFAULT),
+            'meta/type=' => 'user_account_meta',
+            'meta/creation-date=' => time(),
+            'profile/type=' => 'user_account_profile',
+            'profile/title=' => $username,
+            'profile/description=' => 'Hello World!',
+            'profile/needs_access' => [],
+            'profile/blocks' => [],
+        ]);
+    */
+    J_SKIP_CREATE_DEMO_USER:
+
+
     J_EVERYTHING_IS_FINE_SO_SKIP_TO_EXIT:
         goto J_EXIT;
 
