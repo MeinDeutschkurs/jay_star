@@ -45,16 +45,38 @@
         $request_uri = $_SERVER['REQUEST_URI'];
         $original_path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
 
-        // TO-DO:
-        // Check if it starts with @
-        // Erstes segment des Pfades extrahieren und für den lookup nutzen.
-            // User-Profile-Mode (web/$web/$user_ordner_mit_user_shard_wildcard/auth/username=$userNamePhraseWithoutAtSymbol - caseinsensitive!)
-            // Bei "MATCH" User Profile anzeigen, sofern der user das erlaubt.
-            // Bei "keinem MATCH" 404.
-        // Rest des Pfades weiter nutzen, denn analog zum "normalen Inhalt" gibt es auch im user-ordner dieselbe struktur. nur 
-            // statt web/$web/domain/$domain/host/$host ist alles eben unter 
-            // web/$web/$user_ordner_mit_user_shard/ erreichbar.
-        
+        // PHASE 1: User Profile Mode (@username)
+        if (str_starts_with($original_path, '@')) {
+            $segments = explode('/', $original_path, 2);
+            $username = substr($segments[0], 1); // Remove @ symbol
+            $rest = $segments[1] ?? '';
+
+            // Lookup user by username (case-insensitive)
+            $web = j_memo_get('analysis/tenant/web');
+            $matches = j_glob(
+                'web/' . $web . '/' . j_id_wildcard('user') . '/auth/username=' . $username,
+                case_insensitive: true
+            );
+
+            if (count($matches) > 0) {
+                // User found - extract user shard path
+                $user_shard = j_reduce_path($matches[0], 2); // Remove /auth/username=...
+                j_memo_set('state/is_user_profile_mode', true);
+                j_memo_set('analysis/user_shard', $user_shard);
+                $original_path = trim($rest, '/');
+            } else {
+                // User not found - 404
+                goto J_ERROR_USER_NOT_FOUND;
+            }
+        }
+
+        // PHASE 2: API Endpoint Detection (jophi/v1)
+        $api_prefix = 'jophi/v1';
+        if (str_starts_with($original_path, $api_prefix)) {
+            j_memo_set('state/output', 'json');
+            $original_path = trim(substr($original_path, strlen($api_prefix)), '/');
+        }
+
         // Check if asset path exists (marked by ~/)
         $is_asset_request = strpos($original_path, '~/') !== false;
         $parts = explode('~/', $original_path, 2);
@@ -146,8 +168,11 @@
                 j_memo_set('state/is_get',  $gc);
 
             J_INPUT_IMPLICIT_RUN_MODES:
-                j_memo_set('state/is_login',    j_memo_get('var/post/login')  ?? j_memo_get('var/get/login')  ?? false);
-                j_memo_set('state/is_logout',   j_memo_get('var/post/logout') ?? j_memo_get('var/get/logout') ?? false);
+                j_memo_set('state/is_login',            j_memo_get('var/post/login')  ?? j_memo_get('var/get/login')  ?? false);
+                j_memo_set('state/is_logout',           j_memo_get('var/post/logout') ?? j_memo_get('var/get/logout') ?? false);
+                j_memo_set('state/is_backend_web',      j_memo_get('var/post/web')    ?? j_memo_get('var/get/web')    ?? false);
+                j_memo_set('state/is_backend_domain',   j_memo_get('var/post/dom')    ?? j_memo_get('var/get/dom')    ?? false);
+                j_memo_set('state/is_backend_host',     j_memo_get('var/post/host')   ?? j_memo_get('var/get/host')   ?? false);
 
 
     J_CREATE:
@@ -208,6 +233,11 @@
             echo "[TO-DO]: J_ERROR_TENANT\n";
             goto J_EXIT;
 
+        J_ERROR_USER_NOT_FOUND:
+            http_response_code(404);
+            echo "[ERROR]: User profile not found\n";
+            goto J_EXIT;
+
     J_EXIT:
         // wird später in j_shutdown() ausgelagert:
         j_memo_set('analysis/unwanted', array_filter(explode("\n",ob_get_clean())));
@@ -219,7 +249,8 @@
 
         switch (j_memo_get('state/output')) {
             case 'json':
-                // TO-DO: json-output
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(j_memo_get('data', default: []));
                 break;
             case 'media':
                 // TO-DO: media-output
