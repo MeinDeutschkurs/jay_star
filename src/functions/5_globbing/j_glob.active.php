@@ -31,7 +31,7 @@
         return $pattern;
     }
 
-    function j_glob($pattern, $value = null, $flags = 0, $case_insensitive = false, $lock = true) {
+    function j_glob($pattern, $value = null, $flags = 0, $case_insensitive = false, $lock = true, $trim_prefix = '') {
             // Bei case_insensitive MUSS GLOB_BRACE aktiv sein für {alt1,alt2} Patterns
             if ($case_insensitive) {
                 $flags = $flags | GLOB_BRACE;
@@ -74,10 +74,15 @@
             
             $results = [];
             $base_len = strlen(PATHES_BASE_DIR);
-            
+            $trim_len = strlen($trim_prefix);
+
             foreach ($files as $file) {
                 // Entferne BASE_DIR vom Pfad
                 $relative = substr($file, $base_len);
+
+                // Optionaler trim_prefix
+                if ($trim_prefix !== '' && str_starts_with($relative, $trim_prefix)) {
+                    $relative = ltrim(substr($relative, $trim_len), '/');
                 $parts = explode('/', $relative);
                 $decoded_parts = [];
                 
