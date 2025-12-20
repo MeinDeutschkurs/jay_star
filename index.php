@@ -194,6 +194,71 @@
                 j_memo_set('demo/j_extract_from_path/domain',   j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'domain', default:'error'));
                 j_memo_set('demo/j_extract_from_path/host',     j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'host', default:'error'));
 
+        J_CURRENT:
+
+            J_CURRENT_SETTINGS:
+                // Read available overrides (structure with only the values, flattened)
+                $web_settings_path='system/'.j_memo_get('pathes/web').'/settings';
+                $domain_settings_path='system/'.j_memo_get('pathes/domain').'/settings';
+                $host_settings_path='system/'.j_memo_get('pathes/host').'/settings';
+                $user_settings_path=null;
+
+                // demo value: j_files_set($web_settings_path.'/localization/language', 'de');
+
+                j_memo_set($web_settings_path, j_flatten_array(j_files_get($web_settings_path, default: [])), separator:'.');
+                j_memo_set($domain_settings_path, j_flatten_array(j_files_get($domain_settings_path, default: [])), separator:'.');
+                j_memo_set($host_settings_path, j_flatten_array(j_files_get($host_settings_path, default: [])), separator: '.');
+
+                // override chain:
+                j_memo_set('system/override-chain', [
+                    1 => 'web',
+                    2 => 'domain',
+                    3 => 'host',
+                    4 => 'user',
+                ]); 
+
+                // system settings:
+                j_memo_set('system/settings', [
+                    'type' => 'settings',
+                    'icon' => '⚙️',
+                ]);
+
+                j_memo_set('system/settings/localization', [
+                    'type' => 'settings_category',
+                    'icon' => '🌍',
+                ]);
+
+                // settings/localization/language
+                j_memo_set('system/settings/localization/language', [
+                    'type' => 'settings_category_select',
+                    'icon' => '🗣️',
+                    'value' => 'de',
+                    'can_be_changed_by' => ['web', 'domain', 'host']
+                ]);
+                                
+
+                // LOGIC, WITHOUT USER-OVERRIDES CURRENTLY, BECAUSE WE DO NOT HAVE A LOGIN-LOGOUT-SYSTEM NOW!         
+                $chain = j_memo_get('system/override-chain');
+
+                foreach ($chain as $level) {
+                    $path = match($level) {
+                        'web' => $web_settings_path,
+                        'domain' => $domain_settings_path,
+                        'host' => $host_settings_path,
+                        'user' => $user_settings_path,
+                    };
+                    
+                    $overrides = j_memo_get($path) ?? [];
+                    
+                    foreach ($overrides as $setting_key => $override_value) {
+                        $can_change = j_memo_get("system/settings/{$setting_key}/can_be_changed_by") ?? [];
+                        
+                        if (in_array($level, $can_change)) {
+                            j_memo_set("system/settings/{$setting_key}/value", $override_value);
+                        }
+                    }
+                } 
+
     J_CREATE:
 
         // goto J_SKIP_CREATE_DEMO_USER;
@@ -204,8 +269,8 @@
             $host = j_memo_get('analysis/tenant/host');
             $newUserShard = j_id('user');
             $newUserDash = slash_to_dash($newUserShard);
-            $username = 'JoPhi';
-            $useremail = 'jophi@jophi.guru';
+            $username = 'jophi';
+            $useremail = 'jophi@zucki.guru';
             $passwort = 'geheim1234';
             $has_access = [
                 'web-admin::' . $web . '=' => 1,
