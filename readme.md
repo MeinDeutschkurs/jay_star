@@ -1,6 +1,6 @@
 # j_* (jay star)
 
-**A path-based PHP framework where everything is a path.**
+**A path-based PHP framework where everything is a path. Even implicit values! :D **
 
 ## Philosophy
 
@@ -27,7 +27,7 @@ Filesystem: data/web/demo/domain/localhost/host/localhost/localhost⌇about-us�
 **Special Syntax:**
 - `~/` separates structured content from assets/media
 - `⌇` (wave) replaces `/` in flat paths to avoid filesystem conflicts
-- `key=value` in filenames for metadata storage
+- `key=value` in filenames for metadata storage (and glob-able variables)
 
 ### 2. Multi-Tenancy
 
@@ -74,21 +74,21 @@ $user_id_shard = j_id('user');
 // Returns: "user/0/003/039/000/000/019/5f8/321/7c0"
 
 // Simple value
-j_files_set($user_id_shard . '/name', 'John');
-// Creates: data/user/0/003/039/000/000/019/5f8/321/7c0/name
+j_files_set("web/$web/" . $user_id_shard . '/name', 'John');
+// Creates: data/web/demo/user/0/003/039/000/000/019/5f8/321/7c0/name
 
 // Nested structure
-j_files_set($user_id_shard, ['name' => 'John', 'age' => 30]);
-// Creates: data/user/0/003/039/.../name and .../age
+j_files_set("web/$web/". $user_id_shard, ['name' => 'John', 'age' => 30]);
+// Creates: data/web/demo/user/0/003/039/.../name and .../age
 
 // Meta-keys (value in filename)
-j_files_set($user_id_shard . '/status=', 'active');
-// Creates: data/user/0/003/039/.../status=active
+j_files_set("web/$web/". $user_id_shard . '/status=', 'active');
+// Creates: data/web/demo/user/0/003/039/.../status=active
 
-j_files_get($user_id_shard . '/status='); // 'active'
+j_files_get("web/$web/". $user_id_shard . '/status='); // 'active'
 ```
 
-**Meta-Keys:** Keys ending with `=` store the value as part of the filename, enabling fast queries without opening files.
+**Meta-Keys:** Keys ending with `=` store the value as part of the filename, enabling fast queries without opening files. (see j_glob)
 
 ### 5. Unique ID Generation
 
@@ -106,6 +106,8 @@ Components:
 - **PID:** Process ID in hex (for multi-process safety)
 - **Timestamp:** Nanosecond precision timestamp in hex
 
+Notice: With the help of the timestamp, this is intrinsingly sortable by time.
+
 ### 6. Globbing & Pattern Matching
 
 Find files and data using glob patterns with advanced filtering:
@@ -113,7 +115,7 @@ Find files and data using glob patterns with advanced filtering:
 ```php
 // Find user by username (case-insensitive)
 $matches = j_glob(
-    'web/demo/' . j_id_wildcard('user') . '/auth/username=JoPhi',
+    "web/$web/" . j_id_wildcard('user') . '/auth/username=JoPhi',
     case_insensitive: true
 );
 // Returns: ["web/demo/user/0/abc/def/.../auth/username=JoPhi"]
@@ -124,18 +126,18 @@ j_id_wildcard('user')
 
 // Advanced: Clean results with trim_prefix, trim_suffix, meta_split, keys_slash_to_dash
 $users = j_glob(
-    'web/demo/' . j_id_wildcard('user') . '/auth/username=*',
-    trim_prefix: 'web/demo/',              // Remove 'web/demo/' from results
+    "web/$web/" . j_id_wildcard('user') . '/auth/username=*',
+    trim_prefix: "web/$web/",              // Remove 'web/demo/' from results
     trim_suffix: 'auth/username',          // Remove 'auth/username' from results
     meta_split: true,                      // Split path and meta-value into key => value
     keys_slash_to_dash: true               // Convert '/' to '-' in keys
 );
 // Returns: ['user-1-013-ac1-000-000-001-882-9e1-b8b-95e-f54' => 'JoPhi']
 
-// Pattern matching with wildcards
+// Pattern matching with wildcards (not recommended, but possible)
 j_glob('web/*/domain/*/host/*/content/*');
 
-// Extract user ID from glob match result
+// Get a certain LEVEL of a path
 $match = "web/demo/user/0/abc/def/123/456/789/auth/username=JoPhi";
 $user_path = j_reduce_path($match, 2);
 // Returns: "web/demo/user/0/abc/def/123/456/789"
@@ -181,8 +183,9 @@ Secure cookie handling with AES-256-CBC encryption:
 ```php
 // 1. Load cookie from HTTP (on request start)
 j_cookie_get('__necessary', default: [
-    'device-id' => null,
-    'user-id' => null
+    'device-id' => j_id('device'),
+    'user-id' => null,
+    'logged-in' => null,
 ]);
 
 // 2. Read cookie values during request
@@ -206,6 +209,43 @@ j_cookie_set('__necessary');
 
 All cookie data is JSON-encoded and encrypted with a unique key per installation.
 
+### 9. Settings System
+
+Multi-level settings with override chain and permission control:
+
+```php
+// Settings are loaded from filesystem at different levels
+// Override chain: web → domain → host → user (increasing priority)
+
+// Define a setting with metadata
+j_memo_set('system/settings/localization/language', [
+    'type' => 'settings_category_select',
+    'icon' => '🗣️',
+    'value' => 'de',
+    'can_be_changed_by' => ['web', 'domain', 'host']
+]);
+
+// Set override at domain level
+j_files_set('system/web/demo/domain/localhost/settings/localization/language', 'en');
+
+// The override chain applies changes based on permissions
+// Final value accessible via:
+j_memo_get('system/settings/localization/language/value'); // 'en'
+```
+
+**Features:**
+- **Override Chain:** Settings cascade from web → domain → host → user
+- **Permission Control:** Each setting defines which levels can override it (`can_be_changed_by`)
+- **Metadata Support:** Settings include type, icon, and other metadata
+- **Flattened Storage:** Nested settings are flattened using `j_flatten_array()` for efficient access
+
+**Helper Function:**
+- `j_flatten_array($array, $separator)` - Converts nested arrays to flat key-value pairs
+  ```php
+  j_flatten_array(['a' => ['b' => 'c']], separator: '.')
+  // Returns: ['a.b' => 'c']
+  ```
+
 ## Request Flow
 
 The main gateway (`index.php`) processes requests through labeled sections:
@@ -221,19 +261,21 @@ The main gateway (`index.php`) processes requests through labeled sections:
    - **PHASE 3:** Reserved for future path transformations
    - **FINAL PHASE:** Asset split (`~/`) and SEO term extraction
 7. **J_SET_SYSTEM_WIDE_PATHES:** Generate all filesystem paths
-8. **J_READ:** Gather all information (READ before CRUD)
+8. **J_CURRENT:** Load current context and settings
+   - **J_CURRENT_SETTINGS:** Apply settings override chain (web → domain → host → user)
+9. **J_READ:** Gather all information (READ before CRUD)
    - **J_INPUT:** Process cookies, POST, GET parameters, detect run modes
-9. **J_CREATE:** Create operations (based on READ context)
-10. **J_UPDATE:** Update operations (based on READ context)
-11. **J_DELETE:** Delete operations (based on READ context)
-12. **J_EXIT:** Output response (HTML/JSON/Media)
+10. **J_CREATE:** Create operations (based on READ context)
+11. **J_UPDATE:** Update operations (based on READ context)
+12. **J_DELETE:** Delete operations (based on READ context)
+13. **J_EXIT:** Output response (HTML/JSON/Media)
 
 ## Function Categories
 
 Functions are organized by priority (number prefix):
 
 - **-1_string_functions:** String utilities (slash_to_wave, slug_find_problems)
-- **0_array_or_kv:** Array/key-value operations (j_array_get/set, j_kv_get/set)
+- **0_array_or_kv:** Array/key-value operations (j_array_get/set, j_kv_get/set, j_flatten_array)
 - **1_memo:** Memoizer functions (j_memo_get/set)
 - **2_files:** File operations (j_files_get/set, j_file_get_contents)
 - **3_ids_and_shards:** ID generation (j_id)
@@ -263,6 +305,7 @@ Functions are organized by priority (number prefix):
 - Unique ID generation with sharding
 - JSON output handler
 - CRUD-structured gateway (READ before CREATE/UPDATE/DELETE)
+- Settings system with override chain (web → domain → host → user)
 
 **TODO:**
 - HTML output handler (currently debug output only)

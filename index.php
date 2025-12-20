@@ -106,9 +106,9 @@
 
     J_SET_SYSTEM_WIDE_PATHES:
         // Get tenant info
-        $web = j_memo_get('analysis/tenant/web');
+        $web    = j_memo_get('analysis/tenant/web');
         $domain = j_memo_get('analysis/tenant/domain');
-        $host = j_memo_get('analysis/tenant/host');
+        $host   = j_memo_get('analysis/tenant/host');
         
         // Build full structured path with host
         $full_structured = $host . ($structured_part !== '' ? '/' . $structured_part : '');
@@ -203,7 +203,7 @@
                 $host_settings_path='system/'.j_memo_get('pathes/host').'/settings';
                 $user_settings_path=null;
 
-                // demo value: j_files_set($web_settings_path.'/localization/language', 'de');
+                // set a demo value: j_files_set($web_settings_path.'/localization/language', 'de');
 
                 j_memo_set($web_settings_path, j_flatten_array(j_files_get($web_settings_path, default: [])), separator:'.');
                 j_memo_set($domain_settings_path, j_flatten_array(j_files_get($domain_settings_path, default: [])), separator:'.');
