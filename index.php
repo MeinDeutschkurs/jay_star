@@ -137,11 +137,11 @@
             'domain' => $base_domain,
             'host' => $base_host,
             'current-meta' => $current_base . '/meta',
-            'current-needs-access' => $current_base . '/needs-access',
+            'current-needs-access' => $current_base . '/needs_access',
             'current-content' => $current_base . '/content',
             'current-media' => $current_base . '/media',
             'current-media-asset' => $current_base . '/media' . ($asset_part !== '' ? '/' . $asset_part : ''),
-            'current-media-asset-needs-access' => $current_base . '/media' . ($asset_part !== '' ? '/' . $asset_part : '') . '/needs-access',
+            'current-media-asset-needs-access' => $current_base . '/media' . ($asset_part !== '' ? '/' . $asset_part : '') . '/needs_access',
         ];
         
         j_memo_set('pathes', $paths);

@@ -39,13 +39,15 @@ data/
     domain/{domain}/
       host/{host}/
         {flat_path}/
-          meta/       # Metadata
-          content/    # Main content
-          media/      # Media files
-          needs-access/  # Access control flags
+          meta/          # Metadata
+          content/       # Main content
+          media/         # Media files
+          needs_access/  # Access control flags (underscore for security)
 ```
 
 Each tenant (domain/host combination) gets its own isolated data space.
+
+**Security Note:** System directories like `needs_access` and `has_access` use underscores instead of dashes. This is a security feature since user-generated slugs cannot contain underscores, preventing path conflicts.
 
 ### 3. Memoizer (In-Memory State)
 
@@ -251,6 +253,64 @@ j_memo_get('system/settings/localization/language/value'); // 'en'
   // Returns: ['a.b' => 'c']
   ```
 
+### 10. Access Control & Feature-Access
+
+Permission-based feature activation with silent failures:
+
+```php
+// User permissions are loaded from filesystem
+// Path: web/{web}/user/{user_shard}/has_access/
+// Example files:
+//   web-admin::demo=1
+//   domain-admin::localhost=1
+//   host-admin::localhost=1
+//   registered::=1
+
+// Access patterns use double-colon syntax
+// Format: role::context=value
+// Examples:
+//   public::=              (everyone, always added automatically)
+//   registered::=          (any logged-in user)
+//   web-admin::demo=       (admin for web 'demo')
+//   domain-admin::localhost=  (admin for domain 'localhost')
+//   host-editor::127.0.0.1=   (editor for host '127.0.0.1')
+//   private::user-{id}=    (user-specific access)
+
+// Features are activated via URL parameters
+// Example: /?edit=page
+// The system checks user permissions and sets feature state:
+
+j_memo_get('state/feature-edit_page-enabled')
+// Returns: true (if user has permission) or false (silent, no error)
+
+// Supported edit modes:
+// - ?edit=page          → web-admin, web-editor, domain-admin, domain-editor, host-admin, host-editor
+// - ?edit=profile       → registered (any logged-in user)
+// - ?edit=web_settings  → web-admin only
+// - ?edit=domain_settings → domain-admin only
+// - ?edit=host_settings → host-admin only
+// - ?edit=user_settings → registered (own settings)
+// - ?edit=url_structure → web-admin only
+
+// Access checking function
+$has_permission = j_check_access('state/feature-edit_page-needs-access');
+// Returns: true if user has ANY of the required permissions (OR-logic)
+//          false if none match
+```
+
+**Features:**
+- **Silent Feature Activation:** Features are enabled/disabled without throwing errors
+- **OR-Logic Matching:** User needs only ONE matching permission from the requirements
+- **GET/POST Support:** All features work via both GET and POST parameters
+- **Automatic Public Access:** All users (logged-in or not) have `public::=1` access
+- **Multi-Level Permissions:** web → domain → host → user hierarchy
+- **Security:** System paths use underscores (`has_access`, `needs_access`) to prevent user path conflicts
+
+**Helper Functions:**
+- `j_check_access($needs_path, $fallback, $fallback_value)` - Check if user has required permissions
+- `j_array_unset(&$array, $keypath)` - Remove keys from nested arrays
+- `j_memo_unset($keypath)` - Remove keys from memoizer
+
 ## Request Flow
 
 The main gateway (`index.php`) processes requests through labeled sections:
@@ -266,22 +326,25 @@ The main gateway (`index.php`) processes requests through labeled sections:
    - **PHASE 3:** Reserved for future path transformations
    - **FINAL PHASE:** Asset split (`~/`) and SEO term extraction
 7. **J_SET_SYSTEM_WIDE_PATHES:** Generate all filesystem paths
-8. **J_CURRENT:** Load current context and settings
-   - **J_CURRENT_SETTINGS:** Apply settings override chain (web → domain → host → user)
-9. **J_READ:** Gather all information (READ before CRUD)
+8. **J_READ:** Gather all information (READ before CRUD)
    - **J_INPUT:** Process cookies, POST, GET parameters, detect run modes
+   - **J_AUTH:** Load user `has_access` from filesystem, add `public::=1`
+9. **J_CURRENT:** Load current context and settings
+   - **J_CURRENT_SETTINGS:** Apply settings override chain (web → domain → host → user)
+   - **J_CURRENT_FEATURE_CHECK:** Activate features based on URL parameters and permissions
 10. **J_CREATE:** Create operations (based on READ context)
 11. **J_UPDATE:** Update operations (based on READ context)
 12. **J_DELETE:** Delete operations (based on READ context)
-13. **J_EXIT:** Output response (HTML/JSON/Media)
+13. **J_ERROR:** Error handlers (J_ERROR_LOGIN_FIRST, J_ERROR_FORBIDDEN, etc.)
+14. **J_EXIT:** Output response (HTML/JSON/Media)
 
 ## Function Categories
 
 Functions are organized by priority (number prefix):
 
 - **-1_string_functions:** String utilities (slash_to_wave, slug_find_problems)
-- **0_array_or_kv:** Array/key-value operations (j_array_get/set, j_kv_get/set, j_flatten_array)
-- **1_memo:** Memoizer functions (j_memo_get/set)
+- **0_array_or_kv:** Array/key-value operations (j_array_get/set, j_array_unset, j_kv_get/set, j_flatten_array, j_check_access)
+- **1_memo:** Memoizer functions (j_memo_get/set, j_memo_unset)
 - **2_files:** File operations (j_files_get/set, j_file_get_contents)
 - **3_ids_and_shards:** ID generation (j_id)
 - **4_ids_and_shards_wildcards:** ID wildcards (j_id_wildcard, j_extract_from_path)
@@ -312,6 +375,9 @@ Functions are organized by priority (number prefix):
 - CRUD-structured gateway (READ before CREATE/UPDATE/DELETE)
 - Settings system with override chain (web → domain → host, and dynamically → user when logged in)
 - Authentication system (login/logout with device tracking)
+- **Feature-based access control** (permission-based feature activation via URL parameters)
+- **Access checking** (`j_check_access()` with OR-logic matching)
+- **Array utilities** (`j_array_unset()`, `j_memo_unset()`)
 
 **TODO:**
 - HTML output handler (currently debug output only)
@@ -319,7 +385,7 @@ Functions are organized by priority (number prefix):
 - Array append mode for `j_files_set()` (currently only works with `j_memo_set()`)
 - Shutdown handler (j_shutdown)
 - Real registry implementation (currently hardcoded demo)
-- Access control enforcement (needs-access checking)
+- Content-access enforcement (optional, not currently planned)
 
 ## License
 
