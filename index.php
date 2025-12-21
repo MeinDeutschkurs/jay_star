@@ -282,6 +282,21 @@
                 }
             }
 
+            // ACCESS-CONTROL: has-access laden
+            j_memo_set('state/current-user-has-access', []);
+
+            if (j_memo_get('state/logged_in') === true) {
+                $user_shard = j_memo_get('state/user_shard');
+                $has_access = j_files_get("web/$web/user/$user_shard/has_access", default: []);
+
+                foreach ($has_access as $key => $value) {
+                    j_memo_set("state/current-user-has-access/$key", $value);
+                }
+            }
+
+            // PUBLIC immer hinzufügen (für ALLE - eingeloggt oder nicht!)
+            j_memo_set('state/current-user-has-access/public::=', 1);
+
         J_CURRENT:
 
             J_CURRENT_SETTINGS:
@@ -452,7 +467,73 @@
                             j_memo_set("system/settings/{$setting_key}/value", $override_value);
                         }
                     }
-                } 
+                }
+
+    J_CURRENT_FEATURE_CHECK:
+        // Edit-Mode aus GET/POST holen
+        $edit_mode = j_memo_get('var/get/edit') ?? j_memo_get('var/post/edit');
+
+        if (!$edit_mode) {
+            // Kein Edit-Mode aktiv
+            goto J_SKIP_FEATURE_CHECK;
+        }
+
+        // Feature-Name generieren
+        $current_feature = 'edit_' . $edit_mode;
+        $bp = "state/current-feature-$current_feature-needs-access";
+
+        $web = j_memo_get('analysis/tenant/web');
+        $domain = j_memo_get('analysis/tenant/domain');
+        $host = j_memo_get('analysis/tenant/host');
+
+        // needs-access je nach Edit-Mode setzen
+        switch($edit_mode) {
+            case 'page':
+                j_memo_set("$bp/web-admin::$web=", 1);
+                j_memo_set("$bp/web-editor::$web=", 1);
+                j_memo_set("$bp/domain-admin::$domain=", 1);
+                j_memo_set("$bp/domain-editor::$domain=", 1);
+                j_memo_set("$bp/host-admin::$host=", 1);
+                j_memo_set("$bp/host-editor::$host=", 1);
+                break;
+
+            case 'profile':
+                j_memo_set("$bp/registered::=", 1);  // Jeder registrierte User
+                break;
+
+            case 'web_settings':
+                j_memo_set("$bp/web-admin::$web=", 1);
+                // NUR Admin, NICHT Editor!
+                break;
+
+            case 'domain_settings':
+                j_memo_set("$bp/domain-admin::$domain=", 1);
+                break;
+
+            case 'host_settings':
+                j_memo_set("$bp/host-admin::$host=", 1);
+                break;
+
+            case 'user_settings':
+                j_memo_set("$bp/registered::=", 1);  // Eigene Settings bearbeiten
+                break;
+
+            case 'url_structure':
+                j_memo_set("$bp/web-admin::$web=", 1);
+                break;
+
+            default:
+                // Unbekannter Edit-Mode
+                $current_feature = false;
+        }
+
+        // Access-Check nur wenn Feature erkannt wurde
+        if ($current_feature) {
+            $feature_ok = j_check_access($bp);
+            j_memo_set("state/feature-$current_feature-enabled", $feature_ok);
+        }
+
+    J_SKIP_FEATURE_CHECK:
 
     J_CREATE:
 
@@ -515,6 +596,16 @@
         J_ERROR_USER_NOT_FOUND:
             http_response_code(404);
             echo "[ERROR]: User profile not found\n";
+            goto J_EXIT;
+
+        J_ERROR_LOGIN_FIRST:
+            http_response_code(511);
+            echo "TO-DO: Data: 511 Network Authentication Required - Please log in to access this content\n";
+            goto J_EXIT;
+
+        J_ERROR_FORBIDDEN:
+            http_response_code(403);
+            echo "TO-DO: Data: 403 Forbidden - You do not have permission to access this resource\n";
             goto J_EXIT;
 
     J_EXIT:
