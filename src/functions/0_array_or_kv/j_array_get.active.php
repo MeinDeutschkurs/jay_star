@@ -2,7 +2,7 @@
     function j_array_get($array, $keypath, $separator = '/', $default = null) {
         if (!is_array($array)) return $default;
         if ($keypath === '') return $array;
-        
+
         $keys = explode($separator, $keypath);
         $current = $array;
         

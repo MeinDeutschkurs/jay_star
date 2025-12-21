@@ -60,6 +60,11 @@ j_memo_set('users', [
     'john/name' => 'John Doe',
     'john/age' => 30
 ]);
+
+// Array append mode - paths ending with []
+j_memo_set('data/messages/error[]', 'First error');
+j_memo_set('data/messages/error[]', 'Second error');
+// Results in: data/messages/error = [0 => 'First error', 1 => 'Second error']
 ```
 
 All state is stored in `$GLOBALS['_MEMOIZER']` and accessible throughout the request lifecycle.
@@ -301,16 +306,17 @@ Functions are organized by priority (number prefix):
 - API endpoint detection (`jophi/v1` prefix)
 - File-based storage with meta-keys
 - Encrypted cookie handling (with helper functions)
-- Memoizer state management
+- Memoizer state management with array append mode (`[]` syntax)
 - Unique ID generation with sharding
 - JSON output handler
 - CRUD-structured gateway (READ before CREATE/UPDATE/DELETE)
 - Settings system with override chain (web → domain → host → user)
+- Authentication system (login/logout with device tracking)
 
 **TODO:**
 - HTML output handler (currently debug output only)
 - Media output handler
-- Authentication system (login/logout logic)
+- Array append mode for `j_files_set()` (currently only works with `j_memo_set()`)
 - Shutdown handler (j_shutdown)
 - Real registry implementation (currently hardcoded demo)
 - Access control enforcement (needs-access checking)

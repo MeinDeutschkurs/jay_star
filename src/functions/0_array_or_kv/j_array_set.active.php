@@ -5,7 +5,30 @@
             $array = $value;
             return $value;
         }
-        
+
+        // Array-Append-Modus: keypath endet mit []
+        if (str_ends_with($keypath, '[]')) {
+            $base_path = substr($keypath, 0, -2); // Entferne []
+
+            // Navigiere zum Ziel-Array
+            if ($base_path === '') {
+                $target = &$array;
+            } else {
+                $keys = explode($separator, $base_path);
+                $target = &$array;
+                foreach ($keys as $key) {
+                    if (!isset($target[$key]) || !is_array($target[$key])) {
+                        $target[$key] = [];
+                    }
+                    $target = &$target[$key];
+                }
+            }
+
+            // Finde nächsten freien numerischen Index
+            $target[] = $value;
+            return $value;
+        }
+
         // Prüfe ob $value ein Array/Object ist UND ob es Batch-Modus sein soll
         if (is_array($value) || is_object($value)) {
             $value_array = (array)$value;

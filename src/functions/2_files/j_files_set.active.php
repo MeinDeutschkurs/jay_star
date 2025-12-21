@@ -1,5 +1,8 @@
 <?php
     function j_files_set($keypath, $value, $separator = "/", $atomic = false, $lock = true) {
+        // TODO: Support for keypath ending with [] (array append mode)
+        // Similar to j_array_set implementation - needs filesystem logic to find next free numeric index
+
         $parts = explode($separator, $keypath);
         $encoded_parts = [];
         

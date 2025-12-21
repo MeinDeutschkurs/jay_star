@@ -153,7 +153,9 @@
         J_INPUT:
 
             J_INPUT_COOKIES:
-                j_cookie_get('__necessary', 
+                // ACHTUNG: das "__necessary-cookie" heißt jetht PHPSESSID! 
+                // Das soll dafür sorgen, dass das Cookie eher angenommen als abgelehnt wird.
+                j_cookie_get('PHPSESSID', 
                     default: [
                         'device-id' => slash_to_dash(j_id('device')),
                         'user-id' => null,
@@ -180,6 +182,8 @@
                 j_memo_set('state/is_backend_domain',   j_memo_get('var/post/dom')    ?? j_memo_get('var/get/dom')    ?? false);
                 j_memo_set('state/is_backend_host',     j_memo_get('var/post/host')   ?? j_memo_get('var/get/host')   ?? false);
 
+
+            goto J_AUTH; 
             J_DEMO_OF_ALL_USERS_OF_WEB_DEMO:
                 j_memo_set('demo/j_glob/find_all_users', j_glob(
                     'web/demo/' . j_id_wildcard('user') . '/auth/username=*',
@@ -193,6 +197,90 @@
                 j_memo_set('demo/j_extract_from_path/web',      j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'web', default:'error'));
                 j_memo_set('demo/j_extract_from_path/domain',   j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'domain', default:'error'));
                 j_memo_set('demo/j_extract_from_path/host',     j_extract_from_path('web/demo/domain/localhost/host/127.0.0.1/content/whatever', 'host', default:'error'));
+
+        J_AUTH:
+            $web = j_memo_get('analysis/tenant/web');
+            $device_id_dash = j_from_cookie('PHPSESSID', 'device-id');
+
+            // LOGOUT-HANDLER
+            if (j_memo_get('state/is_logout')) {
+                $user_id_dash = j_from_cookie('PHPSESSID', 'user-id');
+                if ($user_id_dash) {
+                    $user_shard = dash_to_slash($user_id_dash);
+                    j_files_set("web/$web/user/$user_shard/devices/$device_id_dash=", 'false');
+                }
+                j_update_cookie('PHPSESSID', 'user-id', null);
+                j_update_cookie('PHPSESSID', 'logged-in', false);
+                j_memo_set('state/user_shard', null);
+                j_memo_set('state/logged_in', false);
+                goto J_CURRENT;
+            }
+
+            // LOGIN-HANDLER
+            if (j_memo_get('state/is_login')) {
+                $username = j_memo_get('var/post/username') ?? j_memo_get('var/get/username');
+                $password = j_memo_get('var/post/password') ?? j_memo_get('var/get/password');
+
+                if ($username && $password) {
+                    $matches = j_glob(
+                        "web/$web/" . j_id_wildcard('user') . "/auth/username=$username",
+                        case_insensitive: true
+                    );
+
+                    if (count($matches) > 0) {
+                        $match_path = $matches[0];
+                        $user_shard = j_extract_from_path($match_path, 'user');
+                        $stored_hash = j_files_get("web/$web/user/$user_shard/auth/userpassword");
+
+                        if (password_verify($password, $stored_hash)) {
+                            // Login erfolgreich
+                            $user_id_dash = slash_to_dash($user_shard);
+                            j_files_set("web/$web/user/$user_shard/devices/$device_id_dash=", time());
+                            j_update_cookie('PHPSESSID', 'user-id', $user_id_dash);
+                            j_update_cookie('PHPSESSID', 'logged-in', true);
+                            j_memo_set('state/user_shard', $user_shard);
+                            j_memo_set('state/logged_in', true);
+                        } else {
+                            // Falsches Passwort
+                            j_memo_set('data/messages/error[]', 'Invalid username or password');
+                            j_memo_set('state/login_failed', true);
+                            j_memo_set('state/logged_in', false);
+                        }
+                    } else {
+                        // User nicht gefunden
+                        j_memo_set('data/messages/error[]', 'Invalid username or password');
+                        j_memo_set('state/login_failed', true);
+                        j_memo_set('state/logged_in', false);
+                    }
+                } else {
+                    j_memo_set('data/messages/error[]', 'Username and password required');
+                }
+            }
+
+            // SESSION-VALIDIERUNG (für bereits eingeloggte User)
+            if (!j_memo_get('state/is_login') && !j_memo_get('state/is_logout')) {
+                $user_id_dash = j_from_cookie('PHPSESSID', 'user-id');
+                $logged_in = j_from_cookie('PHPSESSID', 'logged-in');
+
+                if ($user_id_dash && $logged_in) {
+                    $user_shard = dash_to_slash($user_id_dash);
+                    $device_status = j_files_get("web/$web/user/$user_shard/devices/$device_id_dash=", default: 'false');
+
+                    if ($device_status === 'false' || $device_status === false) {
+                        // Device wurde revoked oder existiert nicht - Auto-Logout
+                        j_update_cookie('PHPSESSID', 'user-id', null);
+                        j_update_cookie('PHPSESSID', 'logged-in', false);
+                        j_memo_set('state/user_shard', null);
+                        j_memo_set('state/logged_in', false);
+                    } else {
+                        // Session gültig
+                        j_memo_set('state/user_shard', $user_shard);
+                        j_memo_set('state/logged_in', true);
+                    }
+                } else {
+                    j_memo_set('state/logged_in', false);
+                }
+            }
 
         J_CURRENT:
 
@@ -213,8 +301,8 @@
                 j_memo_set('system/override-chain', [
                     1 => 'web',
                     2 => 'domain',
-                    3 => 'host',
-                    4 => 'user',
+                    3 => 'host'
+                    // 4 => 'user' // TODO: Enable when user authentication is implemented
                 ]); 
 
                 // system settings:
