@@ -290,6 +290,9 @@
                 $domain_settings_path='system/'.j_memo_get('pathes/domain').'/settings';
                 $host_settings_path='system/'.j_memo_get('pathes/host').'/settings';
                 $user_settings_path=null;
+                if (j_memo_get('state/logged_in') === true) {
+                    $user_settings_path=j_memo_get('pathes/web').'/'.j_memo_get('state/user_shard').'/settings';
+                }
 
                 // set a demo value: j_files_set($web_settings_path.'/localization/language', 'de');
 
@@ -304,6 +307,9 @@
                     3 => 'host'
                     // 4 => 'user' // TODO: Enable when user authentication is implemented
                 ]); 
+                if (j_memo_get('state/logged_in') === true) {
+                    j_memo_set('system/override-chain[]', 'user');
+                }
 
                 // system settings:
                 j_memo_set('system/settings', [
@@ -311,17 +317,118 @@
                     'icon' => '⚙️',
                 ]);
 
+                // settings/localization
                 j_memo_set('system/settings/localization', [
                     'type' => 'settings_category',
                     'icon' => '🌍',
                 ]);
 
-                // settings/localization/language
                 j_memo_set('system/settings/localization/language', [
-                    'type' => 'settings_category_select',
+                    'type' => 'settings_category_selectosdlanguage',
                     'icon' => '🗣️',
                     'value' => 'de',
-                    'can_be_changed_by' => ['web', 'domain', 'host']
+                    'can_be_changed_by' => ['web', 'domain', 'host'],
+                    'log-history' => false
+                ]);
+
+                j_memo_set('system/settings/localization/time-zone', [
+                    'type' => 'settings_category_selecttimezone',
+                    'icon' => '🕗',
+                    'value' => '',
+                    'can_be_changed_by' => ['user'],
+                    'log-history' => true
+                ]);
+
+                // settings/appearance
+                j_memo_set('system/settings/appearance', [
+                    'type' => 'settings_category',
+                    'icon' => '👨‍🎨',
+                ]);
+
+
+                j_memo_set('system/settings/appearance/theme', [
+                    'type' => 'settings_category_selecttheme',
+                    'icon' => '🌓',
+                    'value' => 'Dark',
+                    'can_be_changed_by' => ['web', 'domain', 'host', 'user'],
+                    'log-history' => false,
+                ]);
+
+                j_memo_set('system/settings/appearance/scheme', [
+                    'type' => 'settings_category_selectscheme',
+                    'icon' => '🌈',
+                    'value' => 'default',
+                    'can_be_changed_by' => ['web', 'domain', 'host', 'user'],
+                    'log-history' => false,
+                ]);
+
+
+                j_memo_set('system/settings/appearance/base-layout', [
+                    'type' => 'settings_category_selectbaselayout',
+                    'icon' => '⿲',
+                    'value' => 'default',
+                    'can_be_changed_by' => ['web', 'domain', 'host'],
+                    'log-history' => false,
+                ]);
+
+                // settings/project
+                j_memo_set('system/settings/project', [
+                    'type' => 'settings_category',
+                    'icon' => '🏗️',
+                ]);
+
+                j_memo_set('system/settings/project/title', [
+                    'type' => 'settings_category_singleline',
+                    'icon' => '#️⃣',
+                    'value' => 'Jay Star',
+                    'can_be_changed_by' => ['web', 'domain', 'host'],
+                    'log-history' => false,
+                ]);
+
+                j_memo_set('system/settings/project/description', [
+                    'type' => 'settings_category_singleline',
+                    'icon' => 'ℹ️',
+                    'value' => 'J_*',
+                    'can_be_changed_by' => ['web', 'domain', 'host'],
+                    'log-history' => false
+                ]);
+
+                j_memo_set('system/settings/project/bulk-email', [
+                    'type' => 'settings_category_singleline',
+                    'icon' => '📧',
+                    'value' => 'no-reply@'.j_memo_get('analysis/tenant/host'),
+                    'can_be_changed_by' => ['web', 'domain', 'host'],
+                    'log-history' => false
+                ]);
+
+                // settings/dsgvo
+                j_memo_set('system/settings/dsgvo', [
+                    'type' => 'settings_category',
+                    'icon' => '§',
+                ]);
+
+                j_memo_set('system/settings/dsgvo/allow-youtube-cookies', [
+                    'type' => 'settings_category_timestamporfalse',
+                    'icon' => '🎬',
+                    'value' => '0',
+                    'can_be_changed_by' => ['user'],
+                    'log-history' => true
+                ]);
+
+                j_memo_set('system/settings/dsgvo/allow-vimeo-cookies', [
+                    'type' => 'settings_category_timestamporfalse',
+                    'icon' => '🎬',
+                    'value' => '0',
+                    'can_be_changed_by' => ['user'],
+                    'log-history' => true
+                ]);
+
+                j_memo_set('system/settings/dsgvo/allow-facebook-cookies', [
+                    'type' => 'settings_category_timestamporfalse',
+                    'icon' => '🕸️',
+                    'value' => '0',
+                    'can_be_changed_by' => ['user'],
+                    'log-history' => true
                 ]);
                                 
 

@@ -310,7 +310,7 @@ Functions are organized by priority (number prefix):
 - Unique ID generation with sharding
 - JSON output handler
 - CRUD-structured gateway (READ before CREATE/UPDATE/DELETE)
-- Settings system with override chain (web → domain → host → user)
+- Settings system with override chain (web → domain → host, and dynamically → user when logged in)
 - Authentication system (login/logout with device tracking)
 
 **TODO:**
