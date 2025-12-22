@@ -18,8 +18,8 @@
         j_memo_set('state/protocol', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443 ? 'https://' : 'http://');
         j_memo_set('data', []);
 
-    J_REGISTRY:
-        goto J_REGISTRY_DEMO; # WHICH REGISTRY?
+    J_REGISTRY: # WHICH REGISTRY?
+        goto J_REGISTRY_DEMO; 
 
         J_REGISTRY_DEMO:
             // TO-DO: implement real registry. This is "just" a (hardcoded) demo in necessary final format.
@@ -46,7 +46,10 @@
         $original_path = trim(parse_url($request_uri, PHP_URL_PATH), '/');
 
         // PHASE 1: User Profile Mode (@username)
+        j_memo_set('state/is_user_profile_mode', false);
         if (str_starts_with($original_path, '@')) {
+            j_memo_set('state/is_user_profile_mode', true);
+            j_memo_set('state/is_user_profile_mode_user_is_found', false);
             $segments = explode('/', $original_path, 2);
             $username = substr($segments[0], 1); // Remove @ symbol
             $rest = $segments[1] ?? '';
@@ -58,18 +61,16 @@
                 case_insensitive: true
             );
 
-            if (count($matches) > 0) {
-                // User found - extract user shard path
+            $s_result = count($matches);
+
+            // Exact match:
+            if ($s_result === 1) {
+                // Exact match: User found - extract user shard path
                 $user_shard = j_reduce_path($matches[0], 2); // Remove /auth/username=...
-                j_memo_set('state/is_user_profile_mode', true);
+                j_memo_set('state/is_user_profile_mode_user_is_found', true);
                 j_memo_set('analysis/user_shard', $user_shard);
                 $original_path = trim($rest, '/');
-            } else {
-                // User not found - 404
-                // ATTENTION, AS SOON AS WE HAVE THE HOST-BASED LAYOUT/DESIGN, THIS ERROR MUST BE COVERED BY A DIFFERENT HANDLER, WHICH
-                // INCLUDES ALL THE WEB/DOMAIN AND HOST BASED FEATURES!
-                goto J_ERROR_USER_NOT_FOUND;
-            }
+            } // no error jump here, because we need more data.
         }
 
         // PHASE 2: API Endpoint Detection (jophi/v1)
@@ -144,9 +145,8 @@
             'current-media-asset-needs-access' => $current_base . '/media' . ($asset_part !== '' ? '/' . $asset_part : '') . '/needs_access',
         ];
         
+        // set all already known base pathes:
         j_memo_set('pathes', $paths);
-
-        // j_memo_set('demo/j_reduce_path', j_reduce_path(j_memo_get('pathes/current-meta'), 2));
 
     J_READ:    
 
@@ -176,6 +176,10 @@
                 j_memo_set('state/is_get',  $gc);
 
             J_INPUT_IMPLICIT_RUN_MODES:
+                // reminder: we already have state/is_post
+                // reminder: we already have state/is_get
+                // reminder: we already have state/is_user_profile_mode with its state/is_user_profile_mode_user_is_found
+                // reminder: we already have state/is_asset_request
                 j_memo_set('state/is_login',            j_memo_get('var/post/login')  ?? j_memo_get('var/get/login')  ?? false);
                 j_memo_set('state/is_logout',           j_memo_get('var/post/logout') ?? j_memo_get('var/get/logout') ?? false);
                 j_memo_set('state/is_backend_web',      j_memo_get('var/post/web')    ?? j_memo_get('var/get/web')    ?? false);
@@ -300,174 +304,176 @@
         J_CURRENT:
 
             J_CURRENT_SETTINGS:
+                // reminder: a value will be set like this: j_files_set($web_settings_path.'/localization/language', 'de');
                 // Read available overrides (structure with only the values, flattened)
                 $web_settings_path='system/'.j_memo_get('pathes/web').'/settings';
                 $domain_settings_path='system/'.j_memo_get('pathes/domain').'/settings';
                 $host_settings_path='system/'.j_memo_get('pathes/host').'/settings';
                 $user_settings_path=null;
+
                 if (j_memo_get('state/logged_in') === true) {
                     $user_settings_path=j_memo_get('pathes/web').'/'.j_memo_get('state/user_shard').'/settings';
                 }
-
-                // set a demo value: j_files_set($web_settings_path.'/localization/language', 'de');
 
                 j_memo_set($web_settings_path, j_flatten_array(j_files_get($web_settings_path, default: [])), separator:'.');
                 j_memo_set($domain_settings_path, j_flatten_array(j_files_get($domain_settings_path, default: [])), separator:'.');
                 j_memo_set($host_settings_path, j_flatten_array(j_files_get($host_settings_path, default: [])), separator: '.');
 
-                // override chain:
+                // configure override chain:
                 j_memo_set('system/override-chain', [
                     1 => 'web',
                     2 => 'domain',
                     3 => 'host'
-                    // 4 => 'user' // TODO: Enable when user authentication is implemented
                 ]); 
+
+                // append user to override chain, if a user is logged in:
                 if (j_memo_get('state/logged_in') === true) {
                     j_memo_set('system/override-chain[]', 'user');
                 }
 
-                // system settings:
-                j_memo_set('system/settings', [
-                    'type' => 'settings',
-                    'icon' => '⚙️',
-                ]);
+                J_SYSTEM_SETTINGS:
+                    j_memo_set('system/settings', [
+                        'type' => 'settings',
+                        'icon' => '⚙️',
+                    ]);
 
-                // settings/localization
-                j_memo_set('system/settings/localization', [
-                    'type' => 'settings_category',
-                    'icon' => '🌍',
-                ]);
+                    // settings/localization
+                    j_memo_set('system/settings/localization', [
+                        'type' => 'settings_category',
+                        'icon' => '🌍',
+                    ]);
 
-                j_memo_set('system/settings/localization/language', [
-                    'type' => 'settings_category_selectosdlanguage',
-                    'icon' => '🗣️',
-                    'value' => 'de',
-                    'can_be_changed_by' => ['web', 'domain', 'host'],
-                    'log-history' => false
-                ]);
+                    j_memo_set('system/settings/localization/language', [
+                        'type' => 'settings_category_selectosdlanguage',
+                        'icon' => '🗣️',
+                        'value' => 'de',
+                        'can_be_changed_by' => ['web', 'domain', 'host'],
+                        'log-history' => false
+                    ]);
 
-                j_memo_set('system/settings/localization/time-zone', [
-                    'type' => 'settings_category_selecttimezone',
-                    'icon' => '🕗',
-                    'value' => '',
-                    'can_be_changed_by' => ['user'],
-                    'log-history' => true
-                ]);
+                    j_memo_set('system/settings/localization/time-zone', [
+                        'type' => 'settings_category_selecttimezone',
+                        'icon' => '🕗',
+                        'value' => '',
+                        'can_be_changed_by' => ['user'],
+                        'log-history' => true
+                    ]);
 
-                // settings/appearance
-                j_memo_set('system/settings/appearance', [
-                    'type' => 'settings_category',
-                    'icon' => '👨‍🎨',
-                ]);
-
-
-                j_memo_set('system/settings/appearance/theme', [
-                    'type' => 'settings_category_selecttheme',
-                    'icon' => '🌓',
-                    'value' => 'Dark',
-                    'can_be_changed_by' => ['web', 'domain', 'host', 'user'],
-                    'log-history' => false,
-                ]);
-
-                j_memo_set('system/settings/appearance/scheme', [
-                    'type' => 'settings_category_selectscheme',
-                    'icon' => '🌈',
-                    'value' => 'default',
-                    'can_be_changed_by' => ['web', 'domain', 'host', 'user'],
-                    'log-history' => false,
-                ]);
+                    // settings/appearance
+                    j_memo_set('system/settings/appearance', [
+                        'type' => 'settings_category',
+                        'icon' => '👨‍🎨',
+                    ]);
 
 
-                j_memo_set('system/settings/appearance/base-layout', [
-                    'type' => 'settings_category_selectbaselayout',
-                    'icon' => '⿲',
-                    'value' => 'default',
-                    'can_be_changed_by' => ['web', 'domain', 'host'],
-                    'log-history' => false,
-                ]);
+                    j_memo_set('system/settings/appearance/theme', [
+                        'type' => 'settings_category_selecttheme',
+                        'icon' => '🌓',
+                        'value' => 'Dark',
+                        'can_be_changed_by' => ['web', 'domain', 'host', 'user'],
+                        'log-history' => false,
+                    ]);
 
-                // settings/project
-                j_memo_set('system/settings/project', [
-                    'type' => 'settings_category',
-                    'icon' => '🏗️',
-                ]);
+                    j_memo_set('system/settings/appearance/scheme', [
+                        'type' => 'settings_category_selectscheme',
+                        'icon' => '🌈',
+                        'value' => 'default',
+                        'can_be_changed_by' => ['web', 'domain', 'host', 'user'],
+                        'log-history' => false,
+                    ]);
 
-                j_memo_set('system/settings/project/title', [
-                    'type' => 'settings_category_singleline',
-                    'icon' => '#️⃣',
-                    'value' => 'Jay Star',
-                    'can_be_changed_by' => ['web', 'domain', 'host'],
-                    'log-history' => false,
-                ]);
 
-                j_memo_set('system/settings/project/description', [
-                    'type' => 'settings_category_singleline',
-                    'icon' => 'ℹ️',
-                    'value' => 'J_*',
-                    'can_be_changed_by' => ['web', 'domain', 'host'],
-                    'log-history' => false
-                ]);
+                    j_memo_set('system/settings/appearance/base-layout', [
+                        'type' => 'settings_category_selectbaselayout',
+                        'icon' => '⿲',
+                        'value' => 'default',
+                        'can_be_changed_by' => ['web', 'domain', 'host'],
+                        'log-history' => false,
+                    ]);
 
-                j_memo_set('system/settings/project/bulk-email', [
-                    'type' => 'settings_category_singleline',
-                    'icon' => '📧',
-                    'value' => 'no-reply@'.j_memo_get('analysis/tenant/host'),
-                    'can_be_changed_by' => ['web', 'domain', 'host'],
-                    'log-history' => false
-                ]);
+                    // settings/project
+                    j_memo_set('system/settings/project', [
+                        'type' => 'settings_category',
+                        'icon' => '🏗️',
+                    ]);
 
-                // settings/dsgvo
-                j_memo_set('system/settings/dsgvo', [
-                    'type' => 'settings_category',
-                    'icon' => '§',
-                ]);
+                    j_memo_set('system/settings/project/title', [
+                        'type' => 'settings_category_singleline',
+                        'icon' => '#️⃣',
+                        'value' => 'Jay Star',
+                        'can_be_changed_by' => ['web', 'domain', 'host'],
+                        'log-history' => false,
+                    ]);
 
-                j_memo_set('system/settings/dsgvo/allow-youtube-cookies', [
-                    'type' => 'settings_category_timestamporfalse',
-                    'icon' => '🎬',
-                    'value' => '0',
-                    'can_be_changed_by' => ['user'],
-                    'log-history' => true
-                ]);
+                    j_memo_set('system/settings/project/description', [
+                        'type' => 'settings_category_singleline',
+                        'icon' => 'ℹ️',
+                        'value' => 'J_*',
+                        'can_be_changed_by' => ['web', 'domain', 'host'],
+                        'log-history' => false
+                    ]);
 
-                j_memo_set('system/settings/dsgvo/allow-vimeo-cookies', [
-                    'type' => 'settings_category_timestamporfalse',
-                    'icon' => '🎬',
-                    'value' => '0',
-                    'can_be_changed_by' => ['user'],
-                    'log-history' => true
-                ]);
+                    j_memo_set('system/settings/project/bulk-email', [
+                        'type' => 'settings_category_singleline',
+                        'icon' => '📧',
+                        'value' => 'no-reply@'.j_memo_get('analysis/tenant/host'),
+                        'can_be_changed_by' => ['web', 'domain', 'host'],
+                        'log-history' => false
+                    ]);
 
-                j_memo_set('system/settings/dsgvo/allow-facebook-cookies', [
-                    'type' => 'settings_category_timestamporfalse',
-                    'icon' => '🕸️',
-                    'value' => '0',
-                    'can_be_changed_by' => ['user'],
-                    'log-history' => true
-                ]);
+                    // settings/dsgvo
+                    j_memo_set('system/settings/dsgvo', [
+                        'type' => 'settings_category',
+                        'icon' => '§',
+                    ]);
+
+                    j_memo_set('system/settings/dsgvo/allow-youtube-cookies', [
+                        'type' => 'settings_category_timestamporfalse',
+                        'icon' => '🎬',
+                        'value' => '0',
+                        'can_be_changed_by' => ['user'],
+                        'log-history' => true
+                    ]);
+
+                    j_memo_set('system/settings/dsgvo/allow-vimeo-cookies', [
+                        'type' => 'settings_category_timestamporfalse',
+                        'icon' => '🎬',
+                        'value' => '0',
+                        'can_be_changed_by' => ['user'],
+                        'log-history' => true
+                    ]);
+
+                    j_memo_set('system/settings/dsgvo/allow-facebook-cookies', [
+                        'type' => 'settings_category_timestamporfalse',
+                        'icon' => '🕸️',
+                        'value' => '0',
+                        'can_be_changed_by' => ['user'],
+                        'log-history' => true
+                    ]);
                                 
+                J_OVERRIDE_SYSTEM_SETTINGS_BY_CHAIN_LEVELS:
+                    // LOGIC, INCLUDING USER OVERRIDES
+                    $chain = j_memo_get('system/override-chain');
 
-                // LOGIC, WITHOUT USER-OVERRIDES CURRENTLY, BECAUSE WE DO NOT HAVE A LOGIN-LOGOUT-SYSTEM NOW!         
-                $chain = j_memo_get('system/override-chain');
-
-                foreach ($chain as $level) {
-                    $path = match($level) {
-                        'web' => $web_settings_path,
-                        'domain' => $domain_settings_path,
-                        'host' => $host_settings_path,
-                        'user' => $user_settings_path,
-                    };
-                    
-                    $overrides = j_memo_get($path) ?? [];
-                    
-                    foreach ($overrides as $setting_key => $override_value) {
-                        $can_change = j_memo_get("system/settings/{$setting_key}/can_be_changed_by") ?? [];
+                    foreach ($chain as $level) {
+                        $path = match($level) {
+                            'web' => $web_settings_path,
+                            'domain' => $domain_settings_path,
+                            'host' => $host_settings_path,
+                            'user' => $user_settings_path,
+                        };
                         
-                        if (in_array($level, $can_change)) {
-                            j_memo_set("system/settings/{$setting_key}/value", $override_value);
+                        $overrides = j_memo_get($path) ?? [];
+                        
+                        foreach ($overrides as $setting_key => $override_value) {
+                            $can_change = j_memo_get("system/settings/{$setting_key}/can_be_changed_by") ?? [];
+                            
+                            if (in_array($level, $can_change)) {
+                                j_memo_set("system/settings/{$setting_key}/value", $override_value);
+                            }
                         }
                     }
-                }
+                    
 
     J_CURRENT_FEATURE_CHECK:
         // Edit-Mode aus GET/POST holen
