@@ -65,10 +65,11 @@
 
             // Exact match:
             if ($s_result === 1) {
-                // Exact match: User found - extract user shard path
-                $user_shard = j_reduce_path($matches[0], 2); // Remove /auth/username=...
+                // Exact match: User found - extract user sharded id
+                $user_shard_only = j_reduce_path($matches[0], 2); // Remove /auth/username=...
+                $user_sharded_id_slashes = 'user/' . $user_shard_only;
                 j_memo_set('state/is_user_profile_mode_user_is_found', true);
-                j_memo_set('analysis/user_shard', $user_shard);
+                j_memo_set('analysis/user_sharded_id_slashes', $user_sharded_id_slashes);
                 $original_path = trim($rest, '/');
             } // no error jump here, because we need more data.
         }
@@ -208,14 +209,14 @@
 
             // LOGOUT-HANDLER
             if (j_memo_get('state/is_logout')) {
-                $user_id_dash = j_from_cookie('PHPSESSID', 'user-id');
-                if ($user_id_dash) {
-                    $user_shard = dash_to_slash($user_id_dash);
-                    j_files_set("web/$web/user/$user_shard/devices/$device_id_dash=", 'false');
+                $user_sharded_id_dashes = j_from_cookie('PHPSESSID', 'user-id');
+                if ($user_sharded_id_dashes) {
+                    $user_sharded_id_slashes = dash_to_slash($user_sharded_id_dashes);
+                    j_files_set("web/$web/$user_sharded_id_slashes/devices/$device_id_dash=", 'false');
                 }
                 j_update_cookie('PHPSESSID', 'user-id', null);
                 j_update_cookie('PHPSESSID', 'logged-in', false);
-                j_memo_set('state/user_shard', null);
+                j_memo_set('state/user_sharded_id_slashes', null);
                 j_memo_set('state/logged_in', false);
                 goto J_CURRENT;
             }
@@ -233,16 +234,17 @@
 
                     if (count($matches) > 0) {
                         $match_path = $matches[0];
-                        $user_shard = j_extract_from_path($match_path, 'user');
-                        $stored_hash = j_files_get("web/$web/user/$user_shard/auth/userpassword");
+                        $user_shard_only = j_extract_from_path($match_path, 'user');
+                        $user_sharded_id_slashes = 'user/' . $user_shard_only;
+                        $stored_hash = j_files_get("web/$web/$user_sharded_id_slashes/auth/userpassword");
 
                         if (password_verify($password, $stored_hash)) {
                             // Login erfolgreich
-                            $user_id_dash = slash_to_dash($user_shard);
-                            j_files_set("web/$web/user/$user_shard/devices/$device_id_dash=", time());
-                            j_update_cookie('PHPSESSID', 'user-id', $user_id_dash);
+                            $user_sharded_id_dashes = slash_to_dash($user_sharded_id_slashes);
+                            j_files_set("web/$web/$user_sharded_id_slashes/devices/$device_id_dash=", time());
+                            j_update_cookie('PHPSESSID', 'user-id', $user_sharded_id_dashes);
                             j_update_cookie('PHPSESSID', 'logged-in', true);
-                            j_memo_set('state/user_shard', $user_shard);
+                            j_memo_set('state/user_sharded_id_slashes', $user_sharded_id_slashes);
                             j_memo_set('state/logged_in', true);
                         } else {
                             // Falsches Passwort
@@ -263,22 +265,22 @@
 
             // SESSION-VALIDIERUNG (für bereits eingeloggte User)
             if (!j_memo_get('state/is_login') && !j_memo_get('state/is_logout')) {
-                $user_id_dash = j_from_cookie('PHPSESSID', 'user-id');
+                $user_sharded_id_dashes = j_from_cookie('PHPSESSID', 'user-id');
                 $logged_in = j_from_cookie('PHPSESSID', 'logged-in');
 
-                if ($user_id_dash && $logged_in) {
-                    $user_shard = dash_to_slash($user_id_dash);
-                    $device_status = j_files_get("web/$web/user/$user_shard/devices/$device_id_dash=", default: 'false');
+                if ($user_sharded_id_dashes && $logged_in) {
+                    $user_sharded_id_slashes = dash_to_slash($user_sharded_id_dashes);
+                    $device_status = j_files_get("web/$web/$user_sharded_id_slashes/devices/$device_id_dash=", default: 'false');
 
                     if ($device_status === 'false' || $device_status === false) {
                         // Device wurde revoked oder existiert nicht - Auto-Logout
                         j_update_cookie('PHPSESSID', 'user-id', null);
                         j_update_cookie('PHPSESSID', 'logged-in', false);
-                        j_memo_set('state/user_shard', null);
+                        j_memo_set('state/user_sharded_id_slashes', null);
                         j_memo_set('state/logged_in', false);
                     } else {
                         // Session gültig
-                        j_memo_set('state/user_shard', $user_shard);
+                        j_memo_set('state/user_sharded_id_slashes', $user_sharded_id_slashes);
                         j_memo_set('state/logged_in', true);
                     }
                 } else {
@@ -290,8 +292,8 @@
             j_memo_set('state/current-user-has-access', []);
 
             if (j_memo_get('state/logged_in') === true) {
-                $user_shard = j_memo_get('state/user_shard');
-                $has_access = j_files_get("web/$web/user/$user_shard/has_access", default: []);
+                $user_sharded_id_slashes = j_memo_get('state/user_sharded_id_slashes');
+                $has_access = j_files_get("web/$web/$user_sharded_id_slashes/has_access", default: []);
 
                 foreach ($has_access as $key => $value) {
                     j_memo_set("state/current-user-has-access/$key", $value);
@@ -312,7 +314,7 @@
                 $user_settings_path=null;
 
                 if (j_memo_get('state/logged_in') === true) {
-                    $user_settings_path=j_memo_get('pathes/web').'/'.j_memo_get('state/user_shard').'/settings';
+                    $user_settings_path=j_memo_get('pathes/web').'/'.j_memo_get('state/user_sharded_id_slashes').'/settings';
                 }
 
                 j_memo_set($web_settings_path, j_flatten_array(j_files_get($web_settings_path, default: [])), separator:'.');
