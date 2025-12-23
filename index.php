@@ -499,10 +499,11 @@
                     break;
 
                 case 'profile':
-                    $user_sharded_id_dashes = j_from_cookie('PHPSESSID', 'user-id');
-                    if ($user_sharded_id_dashes) {
-                        j_memo_set("$bp/private::$user_sharded_id_dashes=", 1);
+                    $add = j_from_cookie('PHPSESSID', 'user-id');
+                    if (!$add) {
+                        $add = 'no-user-id';
                     }
+                    j_memo_set("$bp/private::$add=", 1);
                     break;
 
                 case 'web_settings':
@@ -519,7 +520,11 @@
                     break;
 
                 case 'user_settings':
-                    j_memo_set("$bp/registered::=", 1);  // Eigene Settings bearbeiten
+                    $add = j_from_cookie('PHPSESSID', 'user-id');
+                    if (!$add) {
+                        $add = 'no-user-id';
+                    }
+                    j_memo_set("$bp/private::$add=", 1);
                     break;
 
                 case 'url_structure':
