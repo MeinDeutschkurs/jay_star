@@ -25,3 +25,6 @@ claude.md
 # Secret & Data
 secrets/
 data/
+
+# SSL Certificates (managed by AA-Panel)
+.well-known/

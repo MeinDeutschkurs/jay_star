@@ -474,71 +474,71 @@
                     }
                 }
 
-J_CURRENT_FEATURE_CHECK:
-    // Edit-Mode aus GET/POST holen
-    $edit_mode = j_memo_get('var/get/edit') ?? j_memo_get('var/post/edit');
+    J_CURRENT_FEATURE_CHECK:
+        // Edit-Mode aus GET/POST holen
+        $edit_mode = j_memo_get('var/get/edit') ?? j_memo_get('var/post/edit');
 
-    if (!$edit_mode) {
-        // Kein Edit-Mode aktiv
-        goto J_SKIP_FEATURE_CHECK;
-    }
+        if (!$edit_mode) {
+            // Kein Edit-Mode aktiv
+            goto J_NO_FEATURE_WAS_ACTIVE;
+        }
 
-    // Feature-Name generieren
-    $current_feature = 'edit_' . $edit_mode;
-    $bp = "state/current-feature-$current_feature-needs-access";
+        // Feature-Name generieren
+        $current_feature = 'edit_' . $edit_mode;
+        $bp = "state/current-feature-$current_feature-needs-access";
 
-    $web = j_memo_get('analysis/tenant/web');
-    $domain = j_memo_get('analysis/tenant/domain');
-    $host = j_memo_get('analysis/tenant/host');
+        $web = j_memo_get('analysis/tenant/web');
+        $domain = j_memo_get('analysis/tenant/domain');
+        $host = j_memo_get('analysis/tenant/host');
 
-    // needs-access je nach Edit-Mode setzen
-    switch($edit_mode) {
-        case 'page':
-            j_memo_set("$bp/web-admin::$web=", 1);
-            j_memo_set("$bp/web-editor::$web=", 1);
-            j_memo_set("$bp/domain-admin::$domain=", 1);
-            j_memo_set("$bp/domain-editor::$domain=", 1);
-            j_memo_set("$bp/host-admin::$host=", 1);
-            j_memo_set("$bp/host-editor::$host=", 1);
-            break;
+        // needs-access je nach Edit-Mode setzen
+        switch($edit_mode) {
+            case 'page':
+                j_memo_set("$bp/web-admin::$web=", 1);
+                j_memo_set("$bp/web-editor::$web=", 1);
+                j_memo_set("$bp/domain-admin::$domain=", 1);
+                j_memo_set("$bp/domain-editor::$domain=", 1);
+                j_memo_set("$bp/host-admin::$host=", 1);
+                j_memo_set("$bp/host-editor::$host=", 1);
+                break;
 
-        case 'profile':
-            j_memo_set("$bp/registered::=", 1);  // Jeder registrierte User
-            break;
+            case 'profile':
+                j_memo_set("$bp/registered::=", 1);  // Jeder registrierte User
+                break;
 
-        case 'web_settings':
-            j_memo_set("$bp/web-admin::$web=", 1);
-            // NUR Admin, NICHT Editor!
-            break;
+            case 'web_settings':
+                j_memo_set("$bp/web-admin::$web=", 1);
+                // NUR Admin, NICHT Editor!
+                break;
 
-        case 'domain_settings':
-            j_memo_set("$bp/domain-admin::$domain=", 1);
-            break;
+            case 'domain_settings':
+                j_memo_set("$bp/domain-admin::$domain=", 1);
+                break;
 
-        case 'host_settings':
-            j_memo_set("$bp/host-admin::$host=", 1);
-            break;
+            case 'host_settings':
+                j_memo_set("$bp/host-admin::$host=", 1);
+                break;
 
-        case 'user_settings':
-            j_memo_set("$bp/registered::=", 1);  // Eigene Settings bearbeiten
-            break;
+            case 'user_settings':
+                j_memo_set("$bp/registered::=", 1);  // Eigene Settings bearbeiten
+                break;
 
-        case 'url_structure':
-            j_memo_set("$bp/web-admin::$web=", 1);
-            break;
+            case 'url_structure':
+                j_memo_set("$bp/web-admin::$web=", 1);
+                break;
 
-        default:
-            // Unbekannter Edit-Mode
-            $current_feature = false;
-    }
+            default:
+                // Unbekannter Edit-Mode
+                $current_feature = false;
+        }
 
-    // Access-Check nur wenn Feature erkannt wurde
-    if ($current_feature) {
-        $feature_ok = j_check_access($bp);
-        j_memo_set("state/feature-$current_feature-enabled", $feature_ok);
-    }
+        // Access-Check nur wenn Feature erkannt wurde
+        if ($current_feature) {
+            $feature_ok = j_check_access($bp);
+            j_memo_set("state/feature-$current_feature-enabled", $feature_ok);
+        }
 
-    J_SKIP_FEATURE_CHECK:
+    J_NO_FEATURE_WAS_ACTIVE:
 
     J_CRUD:
         J_READ:

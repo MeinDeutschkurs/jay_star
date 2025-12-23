@@ -5,10 +5,10 @@
 
     if (!file_exists('./.htaccess')) {
         echo '<!-- HOLD ON! I have to complete the setup process... ';
-            file_put_contents('./.htaccess', 
+            file_put_contents('./.htaccess',
                 'RewriteEngine On' . PHP_EOL .
                 '# Exception for special folders:' . PHP_EOL .
-                'RewriteCond %{REQUEST_URI} !^/(css|js|assets)/' . PHP_EOL .
+                'RewriteCond %{REQUEST_URI} !^/(css|js|assets|\.well-known)/' . PHP_EOL .
                 PHP_EOL .
                 '# index.php is the gateway:' . PHP_EOL .
                 'RewriteCond %{REQUEST_URI} !^/index\.php$ [NC]' . PHP_EOL .
@@ -64,7 +64,10 @@
             PHP_EOL .
             '# Secret & Data' . PHP_EOL .
             'secrets/' . PHP_EOL .
-            $database_name.'/' . PHP_EOL
+            $database_name.'/' . PHP_EOL .
+            PHP_EOL .
+            '# SSL Certificates (managed by AA-Panel)' . PHP_EOL .
+            '.well-known/' . PHP_EOL
         );
         echo 'DONE. -->'. PHP_EOL;
         $startover=true;
