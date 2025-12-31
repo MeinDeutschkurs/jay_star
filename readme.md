@@ -93,9 +93,18 @@ j_files_set("web/$web/". $user_id_shard . '/status=', 'active');
 // Creates: data/web/demo/user/0/003/039/.../status=active
 
 j_files_get("web/$web/". $user_id_shard . '/status='); // 'active'
+
+// Array append mode - paths ending with []
+j_files_set('demo/array[]', '1');
+j_files_set('demo/array[]', '2');
+j_files_set('demo/array[]', '3');
+// Creates: data/demo/array/0, data/demo/array/1, data/demo/array/2
+j_files_get('demo/array'); // [0 => '1', 1 => '2', 2 => '3']
 ```
 
 **Meta-Keys:** Keys ending with `=` store the value as part of the filename, enabling fast queries without opening files. (see j_glob)
+
+**Array Append Mode:** Paths ending with `[]` automatically append values with auto-incrementing numeric indices, similar to PHP's `$array[] = value` syntax. Works with both `j_memo_set()` and `j_files_set()`.
 
 ### 5. Unique ID Generation
 
@@ -382,7 +391,6 @@ Functions are organized by priority (number prefix):
 **TODO:**
 - HTML output handler (currently debug output only)
 - Media output handler
-- Array append mode for `j_files_set()` (currently only works with `j_memo_set()`)
 - Shutdown handler (j_shutdown)
 - Real registry implementation (currently hardcoded demo)
 - Content-access enforcement (optional, not currently planned)

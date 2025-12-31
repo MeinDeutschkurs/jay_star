@@ -159,6 +159,7 @@
                     'device-id' => slash_to_dash(j_id('device')),
                     'user-id' => null,
                     'logged-in' => false,
+                    'csrf-id' => slash_to_dash(j_id('csrf'))
                 ]
             );
 
