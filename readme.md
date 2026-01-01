@@ -192,7 +192,54 @@ $domain = j_extract_from_path($path, 'domain', default: 'unknown');
 
 **Smart Shard Detection:** Automatically recognizes sharded IDs like `user` and extracts the complete ID including all shard segments.
 
-### 8. Encrypted Cookies
+### 8. Content Search (Full-Text)
+
+Search through file contents with flexible path targeting - like Elasticsearch, but without indexes:
+
+```php
+// Search in a specific content file
+$results = j_grep('Datenschutz', 'web/demo/domain/localhost/localhost⌇about-us/content');
+// Returns: ['web/demo/.../content' => [42 => 'Line containing Datenschutz']]
+
+// Search across multiple specific paths (faster than recursive search)
+$results = j_grep_multiple(
+    'privacy policy',
+    [
+        'web/demo/domain/localhost/localhost/content',
+        'web/demo/domain/localhost/localhost⌇about-us/content',
+        'web/demo/domain/localhost/localhost⌇contact/content'
+    ]
+);
+
+// Search with multiple patterns and paths
+$results = j_grep_multiple(
+    ['admin@example.com', 'support@example.com'],
+    ['web/demo/domain/localhost', 'web/demo/domain/example.com']
+);
+
+// Limit search to specific file types
+$results = j_grep('keyword', 'web/demo', '*.txt');
+```
+
+**How it works:**
+- **Shell-based:** Uses native `grep` for fast searches (when available)
+- **PHP fallback:** Manual search when shell execution is disabled
+- **Targeted:** Specify exact paths instead of recursive scans
+- **Efficient:** Only searches text files (content/, meta/), skips binary files (media/)
+
+**Return format:**
+```php
+[
+    'relative/path/to/file' => [
+        line_number => 'matching line content',
+        another_line => 'another match'
+    ]
+]
+```
+
+**Performance:** With known paths (e.g., from sitemap), searching 500 pages takes ~50-200ms with shell grep, 1-3s with PHP fallback. No database or index required.
+
+### 9. Encrypted Cookies
 
 Secure cookie handling with AES-256-CBC encryption:
 
