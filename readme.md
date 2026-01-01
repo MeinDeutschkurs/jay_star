@@ -100,11 +100,20 @@ j_files_set('demo/array[]', '2');
 j_files_set('demo/array[]', '3');
 // Creates: data/demo/array/0, data/demo/array/1, data/demo/array/2
 j_files_get('demo/array'); // [0 => '1', 1 => '2', 2 => '3']
+
+// Get directories
+j_dirs_get('web/demo/domain/localhost/host/localhost');
+// Returns: ['web/demo/.../localhost', 'web/demo/.../localhost⌇about-us', ...]
+
+j_dirs_get('web/demo/domain/localhost/host/localhost', names_only: true);
+// Returns: ['localhost', 'localhost⌇about-us', 'localhost⌇contact', ...]
 ```
 
 **Meta-Keys:** Keys ending with `=` store the value as part of the filename, enabling fast queries without opening files. (see j_glob)
 
 **Array Append Mode:** Paths ending with `[]` automatically append values with auto-incrementing numeric indices, similar to PHP's `$array[] = value` syntax. Works with both `j_memo_set()` and `j_files_set()`.
+
+**Directory Listing:** Use `j_dirs_get()` to list subdirectories. With `names_only: true`, get all flat-paths of a site - perfect for generating sitemaps, building breadcrumbs, or creating targeted search paths for `j_grep_multiple()`.
 
 ### 5. Unique ID Generation
 
